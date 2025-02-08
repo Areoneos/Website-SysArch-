@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <!-- Login Form -->
+    <div class="login-container">
+        <h2>Login</h2>
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+        {% if registration_success %}
+            <p class="success">Registration successful! You can now log in.</p>
+        {% endif %}
+        <form action="/index" method="POST">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+        <p>Don't have an account? <a href="#" id="register-link">Register</a></p>
+    </div>
+
+    <!-- Registration Modal -->
+<div id="register-modal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeRegisterModal()">&times;</span>
+        <h2>Register</h2>
+        <form action="/register" method="POST">
+            <input type="text" name="id_number" placeholder="ID Number" required>
+            <input type="text" name="last_name" placeholder="Last Name" required>
+            <input type="text" name="first_name" placeholder="First Name" required>
+            <input type="text" name="middle_name" placeholder="Middle Name">
+            
+            <select name="course" required>
+                <option value="">Select Course</option>
+                <option value="BSIT">BSIT</option>
+                <option value="BSCS">BSCS</option>
+                <option value="ACT">ACT</option>
+            </select>
+
+            <select name="year_level" required>
+                <option value="">Select Year Level</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+            </select>
+
+            <input type="email" name="email" placeholder="Email Address" required>
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+
+            <button type="submit">Register</button>
+        </form>
+    </div>
+</div>
+
+    <script>
+        var registerModal = document.getElementById("register-modal");
+        var registerLink = document.getElementById("register-link");
+
+        registerLink.onclick = function() {
+            registerModal.style.display = "block";
+        }
+
+        function closeRegisterModal() {
+            registerModal.style.display = "none";
+        }
+
+        window.onclick = function(event) {
+            if (event.target == registerModal) {
+                registerModal.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>
