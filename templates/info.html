@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Finals</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+    } 
+
+    /* Style the header */
+    header {
+      background-color: #700AA7;
+      padding: 20px;
+      text-align: center;
+      font-size: 25px;
+      color: whitesmoke;
+      font-family: verdana;
+      border-radius: 2px;
+    }
+
+    /* Create two columns/boxes that floats next to each other */
+    nav {
+      float: left;
+      width: 20%;
+      height: 760px; /* only for demonstration, should be removed */
+      background: #E5B7FD;
+      padding: 30px;
+      border-radius: 2px;
+    }
+
+    /* Style the list inside the menu */
+    nav ul {
+      list-style-type: none;
+      padding: 20px ;
+     
+      
+    }
+
+    article {
+      float: left;
+      padding: 25px;
+      width: 80%;
+      background-color: #ECECEC;
+      height: 550px; 
+      font-family: Garamond,serif;
+      font-size: 18px;/* only for demonstration, should be removed */
+    }
+
+    /* Clear floats after the columns */
+    section::after {
+      content: "";
+      display: table;
+      clear: both;
+    }
+
+    /* Style the footer */
+    footer {
+      background-color: #353535 ;
+      padding: 5px;
+      text-align: center;
+      color: ghostwhite;      
+    }
+
+    /* Responsive layout - makes the two columns/boxes stack on top of each other instead of next to each other, on small screens */
+    @media (max-width: 600px) {
+      nav, article {
+        width: 100%;
+        height: auto;
+   }
+ }
+   a:hover {
+    color: blue;
+   }
+   h1 {
+    font-size: 30px;
+   }
+  button {
+  background-color: #8B0CCF;
+  color: whitesmoke;
+  padding:15px 18px;
+  margin:10px 0;
+  border:transparent;
+  cursor:pointer;
+  width:100%;
+  font-size: 18px;
+  font-family: verdana;
+  display:inline-block;
+  border-radius: 5px;
+  overflow: hidden;
+  font-weight: 500;
+}
+.button:hover {
+  background: #700AA7;
+}
+.button:active {
+  background: #4D0872;
+}
+.button span {
+  cursor: pointer;
+  display: inline-block;
+  position: relative;
+  transition: 0.5s;
+}
+
+.button span:after {
+  content: '\00bb';
+  position: relative;
+  opacity: 0;
+  top: 0;
+  right: -30px;
+  transition: 1.0s;
+}
+
+.button:hover span {
+  padding-right: 10px;
+}
+
+.button:hover span:after {
+  opacity: 1;
+  right: 0;
+} 
+
+  
+  </style>
+</head>
+<body>
+
+<header>
+  <h2>
+     <span class="button__icon">
+     CCS SIT-IN MONITORING SYSTEM <ion-icon name="bookmarks-outline"></ion-icon>
+     </span>
+  </h2>
+</header>
+
+<section>
+  <nav>
+    <ul>
+      <li>
+        <button class="button" style="vertical-align: middle;" onclick="window.location.href='/info'">
+          <span class="button__icon">
+            Info <ion-icon name="information-circle-outline"></ion-icon>
+          </span>     
+        </button>
+      </li>
+
+      <li>
+        <button class="button" style="vertical-align: middle;" onclick="window.location.href='/edit'">
+          <span>
+            Edit <ion-icon name="person-circle-outline"></ion-icon>
+          </span> 
+        </button>
+      </li>
+
+      <li>
+        <button class="button" style="vertical-align: middle;" onclick="window.location.href='/announcement'">
+          <span>
+            Announcement <ion-icon name="mic-outline"></ion-icon>
+          </span> 
+        </button>
+      </li>
+
+      <li>
+        <button class="button" style="vertical-align: middle;" onclick="window.location.href='/sessions'">
+          <span>
+            Remaining Sessions <ion-icon name="card-outline"></ion-icon>
+          </span> 
+        </button>
+      </li>
+
+      <li>
+        <button class="button" style="vertical-align: middle;" onclick="window.location.href='/rules'">
+          <span>
+            Sit-in Rules <ion-icon name="accessibility-outline"></ion-icon>
+          </span>
+        </button>
+      </li>
+
+      <li>
+        <button class="button" style="vertical-align: middle;" onclick="window.location.href='/labrules'">
+          <span>
+            Lab Rules & Regulations <ion-icon name="build-outline"></ion-icon>
+          </span> 
+        </button>
+      </li>
+
+      <li>
+        <button class="button" style="vertical-align: middle;" onclick="window.location.href='/history'">
+          <span>
+            Sit-In History <ion-icon name="calendar-outline"></ion-icon>
+          </span> 
+        </button>
+      </li>
+
+      <li>
+        <button class="button" style="vertical-align: middle;" onclick="window.location.href='/reservations'">
+          <span>
+            Reservations <ion-icon name="calendar-number-outline"></ion-icon>
+          </span> 
+        </button>
+      </li>
+
+      <!-- Logout Button -->
+      <li>
+        <button class="button" style="vertical-align: middle; background-color: red; color: white;" onclick="window.location.href='/index'">
+          <span>
+            Logout <ion-icon name="log-out-outline"></ion-icon>
+          </span> 
+        </button>
+      </li>
+
+    </ul>
+  </nav>
+
+
+  </nav>
+  <article>
+    <h1>Web Development</h1>
+    <p1><b>Web development</b> is the work involved in developing a website for the <b>Internet (World Wide Web)</b> or an <b>intranet (a private network)</b>.Web development can range from developing a simple single static page of plain text to complex web applications, electronic businesses, and social network services. A more comprehensive list of tasks to which Web development commonly refers, may include <b>Web engineering, Web design, Web content development, client liaison, client-side/server-side scripting, Web server and network security configuration, and e-commerce development.</b><br>
+  <br>
+Among Web professionals, <b>"Web development"</b> usually refers to the main non-design aspects of building Web sites: writing markup and coding. Web development may use <b>Content Management Systems (CMS)</b> to make content changes easier and available with basic technical skills.<br>
+<br>
+For larger organizations and businesses, Web development teams can consist of hundreds of people (Web developers) and follow standard methods like <b>Agile methodologies</b> while developing Web sites. Smaller organizations may only require a single permanent or contracting developer, or secondary assignment to related job positions such as a graphic designer or information systems technician. Web development may be a collaborative effort between departments rather than the domain of a designated department. <br>
+<br>There are <b>three kinds of Web developer specialization: front-end developer, back-end developer, and full-stack developer.</b> Front-end developers are responsible for <b>behavior and visuals</b> that run in the user browser, while back-end developers deal with the <b>servers</b>. Since the commercialization of the Web with  <b style="color: red;">Tim Berners-Lee</b> developing the World Wide Web at <b>CERN</b>, the industry has boomed and has become one of the most used technologies ever.</p1>
+    
+    
+  </article>
+</section>
+<footer>
+  <p>copyright © 2022 all rights reserved</p>
+</footer>
+
+
+<script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+</body>
+</html>
