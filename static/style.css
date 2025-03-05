@@ -1,5 +1,15 @@
 /* Basic styling */
-body {
+.body {
+    font-family: Arial, sans-serif;
+    background-size: cover;
+    background-position: center;
+    background-color: #361249;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+}
+
+.logbody {
     font-family: Arial, sans-serif;
     background-image: url("/static/yep.jpg");
     background-size: cover;
@@ -9,7 +19,144 @@ body {
     height: 100vh;
 }
 
-.login-container {
+/* Header */
+header {
+    background-color: #700AA7;
+    padding: 20px;
+    text-align: center;
+    font-size: 25px;
+    color: whitesmoke;
+    font-family: Verdana, sans-serif;
+    border-radius: 2px;
+}
+
+/* Navigation */
+nav {
+    float: left;
+    width: 20%;
+    height: 760px; /* Adjust as needed */
+    background: #E5B7FD;
+    padding: 30px;
+    border-radius: 2px;
+}
+
+nav ul {
+    list-style-type: none;
+    padding: 20px;
+}
+
+/* Article (Main Content) */
+article {
+    padding: 25px;
+    width: 98%;
+    background-color: #ffffff;
+    height: 550px; /* Adjust as needed */
+    font-family: Garamond, serif;
+    font-size: 18px;
+}
+
+/* Clear floats */
+section::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+/* Footer */
+footer {
+    background-color: #742e2e;
+    padding: 5px;
+    text-align: center;
+    color: ghostwhite;
+}
+
+/* Buttons */
+button {
+    background-color: #8B0CCF;
+    color: whitesmoke;
+    padding: 15px 18px;
+    margin: 10px 0;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    font-size: 18px;
+    font-family: Verdana, sans-serif;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #700AA7;
+}
+
+button:active {
+    background-color: #4D0872;
+}
+
+.button span {
+    cursor: pointer;
+    display: inline-block;
+    position: relative;
+    transition: 0.5s;
+}
+
+.button span:after {
+    content: '\00bb';
+    position: relative;
+    opacity: 0;
+    top: 0;
+    right: -30px;
+    transition: 1.0s;
+}
+
+.button:hover span {
+    padding-right: 10px;
+}
+
+.button:hover span:after {
+    opacity: 1;
+    right: 0;
+}
+
+/* Profile Section */
+.profile-section {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.profile-picture {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-right: 20px;
+}
+
+.profile-picture img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-details h3 {
+    margin: 0;
+    font-size: 24px;
+    color: #333;
+}
+
+.profile-details p {
+    margin: 5px 0;
+    font-size: 16px;
+    color: #666;
+}
+
+/* Login and Register Containers */
+.login-container, .register-container {
     width: 350px;
     margin: 100px auto;
     background-color: rgba(255, 255, 255, 0.8);
@@ -18,15 +165,7 @@ body {
     border-radius: 10px;
 }
 
-.register-container {
-    width: 350px;
-    background-color: rgba(255, 255, 255, 0.8);
-    padding: 50px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
-    text-align: center;
-}
-
+/* Input Fields */
 input, select {
     width: 100%;
     padding: 10px;
@@ -35,24 +174,7 @@ input, select {
     border-radius: 5px;
 }
 
-button {
-    width: 100%;
-    padding: 10px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-button:hover {
-    background-color: #45a049;
-}
-
-p {
-    text-align: center;
-}
-
+/* Links */
 a {
     color: #4CAF50;
     text-decoration: none;
@@ -62,7 +184,7 @@ a:hover {
     text-decoration: underline;
 }
 
-/* Modal styles */
+/* Modal Styles */
 .modal {
     display: none;
     position: fixed;
@@ -107,4 +229,12 @@ a:hover {
 .error {
     color: red;
     text-align: center;
+}
+
+/* Responsive Layout */
+@media (max-width: 600px) {
+    nav, article {
+        width: 100%;
+        height: auto;
+    }
 }

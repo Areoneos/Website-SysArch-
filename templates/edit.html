@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Finals</title>
+  <title>Sit-In Monitoring System</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
@@ -208,11 +208,11 @@
 
       <!-- Logout Button -->
       <li>
-        <button class="button" style="vertical-align: middle; background-color: red; color: white;" onclick="window.location.href='/index'">
-          <span>
-            Logout <ion-icon name="log-out-outline"></ion-icon>
-          </span> 
-        </button>
+        <button class="button" style="vertical-align: middle; background-color: red; color: white;" onclick="window.location.href='/logout'">
+            <span>
+              Logout <ion-icon name="log-out-outline"></ion-icon>
+            </span> 
+          </button>
       </li>
 
     </ul>
@@ -221,19 +221,55 @@
 
   </nav>
   <article>
-    <h1>Web Development</h1>
-    <p1><b>Web development</b> is the work involved in developing a website for the <b>Internet (World Wide Web)</b> or an <b>intranet (a private network)</b>.Web development can range from developing a simple single static page of plain text to complex web applications, electronic businesses, and social network services. A more comprehensive list of tasks to which Web development commonly refers, may include <b>Web engineering, Web design, Web content development, client liaison, client-side/server-side scripting, Web server and network security configuration, and e-commerce development.</b><br>
-  <br>
-Among Web professionals, <b>"Web development"</b> usually refers to the main non-design aspects of building Web sites: writing markup and coding. Web development may use <b>Content Management Systems (CMS)</b> to make content changes easier and available with basic technical skills.<br>
-<br>
-For larger organizations and businesses, Web development teams can consist of hundreds of people (Web developers) and follow standard methods like <b>Agile methodologies</b> while developing Web sites. Smaller organizations may only require a single permanent or contracting developer, or secondary assignment to related job positions such as a graphic designer or information systems technician. Web development may be a collaborative effort between departments rather than the domain of a designated department. <br>
-<br>There are <b>three kinds of Web developer specialization: front-end developer, back-end developer, and full-stack developer.</b> Front-end developers are responsible for <b>behavior and visuals</b> that run in the user browser, while back-end developers deal with the <b>servers</b>. Since the commercialization of the Web with  <b style="color: red;">Tim Berners-Lee</b> developing the World Wide Web at <b>CERN</b>, the industry has boomed and has become one of the most used technologies ever.</p1>
-    
+    <div class="login-container">
+      <h2>Edit Profile</h2>
+      <form action="/update_profile" method="POST">
+          <!-- ID Number (Read-only, cannot be changed) -->
+          <input type="text" name="id_number" value="{{ user.id_number }}" readonly>
+
+          <!-- Last Name -->
+          <input type="text" name="last_name" value="{{ user.last_name }}" required>
+
+          <!-- First Name -->
+          <input type="text" name="first_name" value="{{ user.first_name }}" required>
+
+          <!-- Middle Name -->
+          <input type="text" name="middle_name" value="{{ user.middle_name }}">
+
+          <!-- Course -->
+          <select name="course" required>
+              <option value="BSIT" {% if user.course == "BSIT" %}selected{% endif %}>BSIT</option>
+              <option value="BSCS" {% if user.course == "BSCS" %}selected{% endif %}>BSCS</option>
+              <option value="ACT" {% if user.course == "ACT" %}selected{% endif %}>ACT</option>
+          </select>
+
+          <!-- Year Level -->
+          <select name="year_level" required>
+              <option value="1" {% if user.year_level == 1 %}selected{% endif %}>1</option>
+              <option value="2" {% if user.year_level == 2 %}selected{% endif %}>2</option>
+              <option value="3" {% if user.year_level == 3 %}selected{% endif %}>3</option>
+              <option value="4" {% if user.year_level == 4 %}selected{% endif %}>4</option>
+          </select>
+
+          <!-- Email -->
+          <input type="email" name="email" value="{{ user.email }}" required>
+
+          <!-- Username -->
+          <input type="text" name="username" value="{{ user.username }}" required>
+
+          <!-- Password (Optional, only update if filled) -->
+          <input type="password" name="password" placeholder="New Password (leave blank to keep current)">
+
+          <button type="submit">Update Profile</button>
+      </form>
+      <p><a href="{{ url_for('dashboard') }}">Back to Dashboard</a></p>
+  </div>
     
   </article>
 </section>
 <footer>
-  <p>copyright © 2022 all rights reserved</p>
+  <p>copyright © <span id="year"></span> all rights reserved</p>
+  <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
 </footer>
 
 
