@@ -3,7 +3,7 @@
     font-family: Arial, sans-serif;
     background-size: cover;
     background-position: center;
-    background-color: #361249;
+    background-image: linear-gradient(to right, rgb(189, 65, 189), rgb(63, 0, 63));    
     margin: 0;
     padding: 0;
     height: 100vh;
