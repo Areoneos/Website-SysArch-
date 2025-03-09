@@ -10,25 +10,27 @@
 </head>
 <body class="body">
     <header>
-        <h2>
+        <h2 class="titleh1">
             <span class="button__icon">
                 CCS SIT-IN MONITORING SYSTEM <ion-icon name="bookmarks-outline"></ion-icon>
             </span>
         </h2>
     </header>
-
-    <section>
+  
+    <section class="grid-container">
         <nav>
             <ul>
               <li>
-                <button class="button" onclick="window.location.href='/dashboard'">
-                    <span class="textini">
-                        Dashboard 
-                    </span>
-                    <span aria-hidden="true" class="hover-text">
-                      Dashboard
-                    </span>
-                </button>
+                  <button class="button" onclick="window.location.href='/dashboard'">
+                      <span class="textini">
+                        <!-- Reference the SVG file from the static folder 
+                        <img src="{{ url_for('static', filename='house-chimney-blank-svgrepo-com.svg') }}" alt="Dashboard Icon" width="24" height="24">-->
+                        Dashboard
+                      </span>
+                      <span aria-hidden="true" class="hover-text">
+                        Dashboard
+                      </span>
+                    </button>
             </li>
                 <li>
                     <button class="button" onclick="window.location.href='/info'">
@@ -50,7 +52,7 @@
                         </span>
                     </button>
                 </li>
-
+  
                 <li>
                     <button class="button" onclick="window.location.href='/announcement'">
                         <span class="textini">
@@ -61,7 +63,7 @@
                         </span>
                     </button>
                 </li>
-
+  
                 <li>
                     <button class="button" onclick="window.location.href='/sessions'">
                         <span class="textini">
@@ -72,29 +74,7 @@
                         </span>
                     </button>
                 </li>
-
-                <li>
-                    <button class="button" onclick="window.location.href='/rules'">
-                        <span class="textini">
-                            Sit-in Rules 
-                        </span>
-                        <span aria-hidden="true" class="hover-text">
-                            Sit-in Rules
-                        </span>
-                    </button>
-                </li>
-
-                <li>
-                    <button class="button" onclick="window.location.href='/labrules'">
-                        <span class="textini">
-                            Lab Rules & Regulations 
-                        </span>
-                        <span aria-hidden="true" class="hover-text">
-                            Lab Rules & Regulations
-                        </span>
-                    </button>
-                </li>
-
+  
                 <li>
                     <button class="button" onclick="window.location.href='/history'">
                         <span class="textini">
@@ -105,7 +85,7 @@
                         </span>
                     </button>
                 </li>
-
+  
                 <li>
                     <button class="button" onclick="window.location.href='/reservations'">
                         <span class="textini">
@@ -116,7 +96,7 @@
                         </span>
                     </button>
                 </li>
-
+  
                 <!-- Logout Button -->
                 <li>
                     <button class="button" style="background-color: red; color: white;" onclick="window.location.href='/logout'">
@@ -130,9 +110,8 @@
                 </li>
             </ul>
         </nav>
-
-
-  </nav>
+  
+    </nav>
   <article>
     <h1>Web Development</h1>
     <p1><b>Web development</b> is the work involved in developing a website for the <b>Internet (World Wide Web)</b> or an <b>intranet (a private network)</b>.Web development can range from developing a simple single static page of plain text to complex web applications, electronic businesses, and social network services. A more comprehensive list of tasks to which Web development commonly refers, may include <b>Web engineering, Web design, Web content development, client liaison, client-side/server-side scripting, Web server and network security configuration, and e-commerce development.</b><br>

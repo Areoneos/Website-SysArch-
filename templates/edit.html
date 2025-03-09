@@ -9,25 +9,27 @@
 </head>
 <body class="body">
   <header>
-      <h2>
+      <h2 class="titleh1">
           <span class="button__icon">
               CCS SIT-IN MONITORING SYSTEM <ion-icon name="bookmarks-outline"></ion-icon>
           </span>
       </h2>
   </header>
 
-  <section>
+  <section class="grid-container">
       <nav>
           <ul>
             <li>
-              <button class="button" onclick="window.location.href='/dashboard'">
-                  <span class="textini">
-                      Dashboard 
-                  </span>
-                  <span aria-hidden="true" class="hover-text">
-                    Dashboard
-                  </span>
-              </button>
+                <button class="button" onclick="window.location.href='/dashboard'">
+                    <span class="textini">
+                      <!-- Reference the SVG file from the static folder 
+                      <img src="{{ url_for('static', filename='house-chimney-blank-svgrepo-com.svg') }}" alt="Dashboard Icon" width="24" height="24">-->
+                      Dashboard
+                    </span>
+                    <span aria-hidden="true" class="hover-text">
+                      Dashboard
+                    </span>
+                  </button>
           </li>
               <li>
                   <button class="button" onclick="window.location.href='/info'">
@@ -71,29 +73,7 @@
                       </span>
                   </button>
               </li>
-
-              <li>
-                  <button class="button" onclick="window.location.href='/rules'">
-                      <span class="textini">
-                          Sit-in Rules 
-                      </span>
-                      <span aria-hidden="true" class="hover-text">
-                          Sit-in Rules
-                      </span>
-                  </button>
-              </li>
-
-              <li>
-                  <button class="button" onclick="window.location.href='/labrules'">
-                      <span class="textini">
-                          Lab Rules & Regulations 
-                      </span>
-                      <span aria-hidden="true" class="hover-text">
-                          Lab Rules & Regulations
-                      </span>
-                  </button>
-              </li>
-
+              
               <li>
                   <button class="button" onclick="window.location.href='/history'">
                       <span class="textini">
@@ -131,52 +111,57 @@
       </nav>
 
   </nav>
-  <article>
-    <div class="login-container">
-      <h2>Edit Profile</h2>
-      <form action="/update_profile" method="POST">
-          <!-- ID Number (Read-only, cannot be changed) -->
-          <input type="text" name="id_number" value="{{ user.id_number }}" readonly>
-
-          <!-- Last Name -->
-          <input type="text" name="last_name" value="{{ user.last_name }}" required>
-
-          <!-- First Name -->
-          <input type="text" name="first_name" value="{{ user.first_name }}" required>
-
-          <!-- Middle Name -->
-          <input type="text" name="middle_name" value="{{ user.middle_name }}">
-
-          <!-- Course -->
-          <select name="course" required>
+  <main>
+    <article>
+        <div class="edit-container">
+          <h2>Edit Profile</h2>
+          <form action="/update_profile" method="POST" enctype="multipart/form-data">
+            <!-- Profile Picture Section -->
+            <div class="profile-picture-container" onclick="document.getElementById('profile-picture-input').click()">
+                <!-- Display the current profile picture -->
+                <div>
+                <img id="profile-picture-preview" src="{{ url_for('static', filename='profile_pictures/' + user.profile_picture) if user.profile_picture else url_for('static', filename='default_profile.png') }}" alt="Profile Picture">
+                <input type="file" id="profile-picture-input" name="profile_picture" accept="image/*" style="display: none;" onchange="previewProfilePicture(event)">
+                </div>
+                <div class="upload-text">
+                    <button class="upload-text">
+                        <span class="upload-text">
+                            Upload a profile picture
+                        </span>
+                    </button>
+                </div>
+              </div>
+  
+            <!-- Form fields go here -->
+            <input type="text" name="id_number" value="{{ user.id_number }}" readonly>
+            <div class="name-fields">
+              <input type="text" name="last_name" value="{{ user.last_name }}" required placeholder="Last Name">
+              <input type="text" name="first_name" value="{{ user.first_name }}" required placeholder="First Name">
+            </div>
+            <input type="text" name="middle_name" value="{{ user.middle_name }}" placeholder="Middle Name">
+            <select name="course" required>
               <option value="BSIT" {% if user.course == "BSIT" %}selected{% endif %}>BSIT</option>
               <option value="BSCS" {% if user.course == "BSCS" %}selected{% endif %}>BSCS</option>
               <option value="ACT" {% if user.course == "ACT" %}selected{% endif %}>ACT</option>
-          </select>
-
-          <!-- Year Level -->
-          <select name="year_level" required>
+            </select>
+            <select name="year_level" required>
               <option value="1" {% if user.year_level == 1 %}selected{% endif %}>1</option>
               <option value="2" {% if user.year_level == 2 %}selected{% endif %}>2</option>
               <option value="3" {% if user.year_level == 3 %}selected{% endif %}>3</option>
               <option value="4" {% if user.year_level == 4 %}selected{% endif %}>4</option>
-          </select>
-
-          <!-- Email -->
-          <input type="email" name="email" value="{{ user.email }}" required>
-
-          <!-- Username -->
-          <input type="text" name="username" value="{{ user.username }}" required>
-
-          <!-- Password (Optional, only update if filled) -->
-          <input type="password" name="password" placeholder="New Password (leave blank to keep current)">
-
-          <button type="submit">Update Profile</button>
-      </form>
-      <p><a href="{{ url_for('dashboard') }}">Back to Dashboard</a></p>
-  </div>
-    
-  </article>
+            </select>
+            <input type="email" name="email" value="{{ user.email }}" required placeholder="Email">
+            <input type="text" name="username" value="{{ user.username }}" required placeholder="Username">
+            <input type="password" name="password" placeholder="New Password (leave blank to keep current)">
+            <button type="submit" class="button">
+              <span class="textini">Update Profile</span>
+              <span aria-hidden="true" class="hover-text">Update Profile</span>
+            </button>
+          </form>
+          <p><a href="{{ url_for('dashboard') }}">Back to Dashboard</a></p>
+        </div>
+      </article>
+  </main>
 </section>
 <footer>
   <p>copyright © <span id="year"></span> all rights reserved</p>
@@ -186,5 +171,18 @@
 
 <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+<script>
+    // Function to preview the selected profile picture
+    function previewProfilePicture(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          document.getElementById('profile-picture-preview').src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  </script>
 </body>
 </html>

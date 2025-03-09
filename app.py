@@ -84,6 +84,9 @@ def dashboard():
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM users WHERE username = ?", (session['user'],))
     user = cursor.fetchone()
+
+    cursor.execute("SELECT * FROM announcements ORDER BY created_at DESC")
+    announcements = cursor.fetchall()
     conn.close()
 
     if user:
@@ -97,9 +100,10 @@ def dashboard():
             "year_level": user[5],
             "email": user[6],
             "username": user[7],
-            "password": user[8]
+            "password": user[8],
+            "profile_picture": user[9] if len(user) > 9 else None  # Add profile_picture field
         }
-        return render_template('dashboard.html', user=user_data)
+        return render_template('dashboard.html', user=user_data, announcements=announcements)
     else:
         return redirect(url_for('login'))
 
@@ -121,6 +125,10 @@ def edit():
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM users WHERE username = ?", (session['user'],))
     user = cursor.fetchone()
+
+     # Fetch announcements from the database
+    cursor.execute("SELECT * FROM announcements ORDER BY created_at DESC")
+    announcements = cursor.fetchall()
     conn.close()
 
     if user:
@@ -134,18 +142,40 @@ def edit():
             "year_level": user[5],
             "email": user[6],
             "username": user[7],
-            "password": user[8]
+            "password": user[8],
+            "profile_picture": user[9] if len(user) > 9 else None  # Add profile_picture field
         }
         return render_template('edit.html', user=user_data)
     else:
         return redirect(url_for('login'))
+
+import os
+from flask import request, redirect, url_for, session, flash
+import sqlite3
+
+# Function to connect to the database
+def connect_db():
+    return sqlite3.connect("users.db")
+
+# Function to get the absolute path of the profile_pictures folder
+def get_profile_pictures_folder():
+    # Get the absolute path of the current directory
+    base_dir = os.path.abspath(os.path.dirname(__file__))
+    # Create the profile_pictures folder if it doesn't exist
+    profile_pictures_dir = os.path.join(base_dir, 'static', 'profile_pictures')
+    if not os.path.exists(profile_pictures_dir):
+        os.makedirs(profile_pictures_dir)
+    return profile_pictures_dir
 
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
     if 'user' not in session:
         return redirect(url_for('login'))
 
-    # Get form data
+    # Get the current username from the session
+    username = session['user']
+
+    # Fetch form data
     id_number = request.form['id_number']
     last_name = request.form['last_name']
     first_name = request.form['first_name']
@@ -153,64 +183,106 @@ def update_profile():
     course = request.form['course']
     year_level = request.form['year_level']
     email = request.form['email']
-    username = request.form['username']
+    new_username = request.form['username']
     new_password = request.form['password']
+
+    # Handle profile picture upload
+    profile_picture = None
+    if 'profile_picture' in request.files:
+        file = request.files['profile_picture']
+        if file.filename != '':
+            # Generate a unique filename
+            filename = f"user_{username}_profile_picture.{file.filename.split('.')[-1]}"
+            # Get the absolute path to the profile_pictures folder
+            profile_pictures_dir = get_profile_pictures_folder()
+            file_path = os.path.join(profile_pictures_dir, filename)
+            # Save the file
+            file.save(file_path)
+            profile_picture = filename
 
     # Connect to the database
     conn = connect_db()
     cursor = conn.cursor()
 
     try:
-        # Update user data
+        # Update user data in the database
         if new_password:
             # Hash the new password if provided
             hashed_password = hash_password(new_password)
-            cursor.execute("""
-                UPDATE users 
-                SET last_name = ?, first_name = ?, middle_name = ?, course = ?, year_level = ?, email = ?, username = ?, password = ?
-                WHERE id_number = ?
-            """, (last_name, first_name, middle_name, course, year_level, email, username, hashed_password, id_number))
+            if profile_picture:
+                cursor.execute("""
+                    UPDATE users 
+                    SET id_number = ?, last_name = ?, first_name = ?, middle_name = ?, 
+                        course = ?, year_level = ?, email = ?, username = ?, password = ?, profile_picture = ?
+                    WHERE username = ?
+                """, (id_number, last_name, first_name, middle_name, course, year_level, email, new_username, hashed_password, profile_picture, username))
+            else:
+                cursor.execute("""
+                    UPDATE users 
+                    SET id_number = ?, last_name = ?, first_name = ?, middle_name = ?, 
+                        course = ?, year_level = ?, email = ?, username = ?, password = ?
+                    WHERE username = ?
+                """, (id_number, last_name, first_name, middle_name, course, year_level, email, new_username, hashed_password, username))
         else:
-            # Keep the old password if no new password is provided
-            cursor.execute("""
-                UPDATE users 
-                SET last_name = ?, first_name = ?, middle_name = ?, course = ?, year_level = ?, email = ?, username = ?
-                WHERE id_number = ?
-            """, (last_name, first_name, middle_name, course, year_level, email, username, id_number))
+            if profile_picture:
+                cursor.execute("""
+                    UPDATE users 
+                    SET id_number = ?, last_name = ?, first_name = ?, middle_name = ?, 
+                        course = ?, year_level = ?, email = ?, username = ?, profile_picture = ?
+                    WHERE username = ?
+                """, (id_number, last_name, first_name, middle_name, course, year_level, email, new_username, profile_picture, username))
+            else:
+                cursor.execute("""
+                    UPDATE users 
+                    SET id_number = ?, last_name = ?, first_name = ?, middle_name = ?, 
+                        course = ?, year_level = ?, email = ?, username = ?
+                    WHERE username = ?
+                """, (id_number, last_name, first_name, middle_name, course, year_level, email, new_username, username))
 
         conn.commit()
+        flash('Profile updated successfully!', 'success')
     except sqlite3.IntegrityError:
+        conn.rollback()
+        flash('Username or email already taken.', 'error')
+    finally:
         conn.close()
-        return render_template('edit.html', error="Username or email already taken", user=request.form)
 
-    conn.close()
+    # Update the session username if it was changed
+    if new_username != username:
+        session['user'] = new_username
+
     return redirect(url_for('dashboard'))
-
 
 
 
 @app.route('/announcement')
 def announcement():
-    if 'user' in session:
-        return render_template('announcement.html', username=session['user'])
-    return redirect(url_for('login'))
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    return render_template('announcement.html', username=session['user'])
+
+@app.route('/post_announcement', methods=['POST'])
+def post_announcement():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+
+    username = session['user']
+    announcement = request.form['announcement']
+
+    # Save the announcement to the database
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO announcements (username, announcement) VALUES (?, ?)", (username, announcement))
+    conn.commit()
+    conn.close()
+
+    flash('Announcement posted successfully!', 'success')
+    return redirect(url_for('dashboard'))
 
 @app.route('/sessions')
 def sessions():
     if 'user' in session:
         return render_template('sessions.html', username=session['user'])
-    return redirect(url_for('login'))
-
-@app.route('/rules')
-def rules():
-    if 'user' in session:
-        return render_template('rules.html', username=session['user'])
-    return redirect(url_for('login'))
-
-@app.route('/labrules')
-def labrules():
-    if 'user' in session:
-        return render_template('labrules.html', username=session['user'])
     return redirect(url_for('login'))
 
 @app.route('/history')
