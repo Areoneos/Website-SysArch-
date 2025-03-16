@@ -17,99 +17,129 @@
   </header>
 
   <section class="grid-container">
-      <nav>
-          <ul>
+    <nav>
+        <ul>
+          <li>
+              <button class="button" onclick="window.location.href='/dashboard'">
+                  <span class="textini">
+                    Dashboard
+                  </span>
+                  <span aria-hidden="true" class="hover-text">
+                    Dashboard
+                  </span>
+                </button>
+          </li>
+            {% if user.role == 'admin' %}
             <li>
-                <button class="button" onclick="window.location.href='/dashboard'">
+            <button class="button" onclick="window.location.href='/search'">
+                <span class="textini">
+                    Search 
+                </span>
+                <span aria-hidden="true" class="hover-text">
+                    Search
+                </span>
+            </button>
+            </li>
+            <li>
+                <button class="button" onclick="window.location.href='/students'">
                     <span class="textini">
-                      <!-- Reference the SVG file from the static folder 
-                      <img src="{{ url_for('static', filename='house-chimney-blank-svgrepo-com.svg') }}" alt="Dashboard Icon" width="24" height="24">-->
-                      Dashboard
+                        Students
                     </span>
                     <span aria-hidden="true" class="hover-text">
-                      Dashboard
+                        Students
                     </span>
-                  </button>
-          </li>
-              <li>
-                  <button class="button" onclick="window.location.href='/info'">
-                      <span class="textini">
-                          Info 
-                      </span>
-                      <span aria-hidden="true" class="hover-text">
-                        Info 
-                      </span>
-                  </button>
-              </li>
-              <li>
-                  <button class="button" onclick="window.location.href='/edit'">
-                      <span class="textini">
-                          Edit 
-                      </span>
-                      <span aria-hidden="true" class="hover-text">
-                          Edit
-                      </span>
-                  </button>
-              </li>
+                </button>
+            </li>
+            {% endif %}
+            <li>
+                <button class="button" onclick="window.location.href='/edit'">
+                    <span class="textini">
+                        Edit 
+                    </span>
+                    <span aria-hidden="true" class="hover-text">
+                        Edit
+                    </span>
+                </button>
+            </li>
 
-              <li>
-                  <button class="button" onclick="window.location.href='/announcement'">
-                      <span class="textini">
-                          Announcement 
-                      </span>
-                      <span aria-hidden="true" class="hover-text">
-                          Announcement
-                      </span>
-                  </button>
-              </li>
+            {% if user.role == 'admin' %}
+            <li>
+                <button class="button" onclick="window.location.href='/announcement'">
+                    <span class="textini">
+                        Announcement 
+                    </span>
+                    <span aria-hidden="true" class="hover-text">
+                        Announcement
+                    </span>
+                </button>
+            </li>
+            {% endif %}
 
-              <li>
-                  <button class="button" onclick="window.location.href='/sessions'">
-                      <span class="textini">
-                          Remaining Sessions 
-                      </span>
-                      <span aria-hidden="true" class="hover-text">
-                          Remaining Sessions
-                      </span>
-                  </button>
-              </li>
-              
-              <li>
-                  <button class="button" onclick="window.location.href='/history'">
-                      <span class="textini">
-                          Sit-In History 
-                      </span>
-                      <span aria-hidden="true" class="hover-text">
-                          Sit-In History
-                      </span>
-                  </button>
-              </li>
+            {% if user.role == 'admin' %}
+            <li>
+                <button class="button" onclick="window.location.href='/sit-in'">
+                    <span class="textini">
+                        Sit-In
+                    </span>
+                    <span aria-hidden="true" class="hover-text">
+                        Sit-In
+                    </span>
+                </button>
+            </li>
+            {% endif %}
 
-              <li>
-                  <button class="button" onclick="window.location.href='/reservations'">
-                      <span class="textini">
-                          Reservations 
-                      </span>
-                      <span aria-hidden="true" class="hover-text">
-                          Reservations
-                      </span>
-                  </button>
-              </li>
+            {% if user.role == 'admin' %}
+            <li>
+                <button class="button" onclick="window.location.href='/sit-in-reports'">
+                    <span class="textini">
+                        Sit-In Reports
+                    </span>
+                    <span aria-hidden="true" class="hover-text">
+                        Sit-In Reports
+                    </span> 
+                </button>
+            </li>
+            {% endif %}
 
-              <!-- Logout Button -->
-              <li>
-                  <button class="button" style="background-color: red; color: white;" onclick="window.location.href='/logout'">
-                      <span class="textini">
-                          Logout 
-                      </span>
-                      <span aria-hidden="true" class="hover-text">
-                          Logout
-                      </span>
-                  </button>
-              </li>
-          </ul>
-      </nav>
+            {% if user.role == 'admin' %}
+            <li>
+                <button class="button" onclick="window.location.href='/reservations'">
+                    <span class="textini">
+                        Reservations 
+                    </span>
+                    <span aria-hidden="true" class="hover-text">
+                        Reservations
+                    </span>
+                </button>
+            </li>
+            {% endif %}
 
+            {% if user.role == 'admin' %}
+            <li>
+                <button class="button" onclick="window.location.href='/view-sit-in-records'">
+                    <span class="textini">
+                        View Sit In Records 
+                    </span>
+                    <span aria-hidden="true" class="hover-text">
+                        View Sit In Records 
+                    </span>
+                </button>
+            </li>
+            {% endif %}
+
+            <!-- Logout Button -->
+            <li>
+                <button class="button" style="background-color: red; color: white;" onclick="window.location.href='/logout'">
+                    <span class="textini">
+                        Logout 
+                    </span>
+                    <span aria-hidden="true" class="hover-text">
+                        Logout
+                    </span>
+                </button>
+            </li>
+        </ul>
+    </nav>
   </nav>
   <main>
     <article>
@@ -125,7 +155,7 @@
                 </div>
                 <div class="upload-text">
                     <button class="upload-text">
-                        <span class="upload-text">
+                        <span class="uploadexpand">
                             Upload a profile picture
                         </span>
                     </button>

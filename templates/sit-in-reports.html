@@ -23,25 +23,35 @@
               <li>
                   <button class="button" onclick="window.location.href='/dashboard'">
                       <span class="textini">
-                        <!-- Reference the SVG file from the static folder 
-                        <img src="{{ url_for('static', filename='house-chimney-blank-svgrepo-com.svg') }}" alt="Dashboard Icon" width="24" height="24">-->
                         Dashboard
                       </span>
                       <span aria-hidden="true" class="hover-text">
                         Dashboard
                       </span>
                     </button>
-            </li>
+              </li>
+                {% if user.role == 'admin' %}
                 <li>
-                    <button class="button" onclick="window.location.href='/info'">
+                <button class="button" onclick="window.location.href='/search'">
+                    <span class="textini">
+                        Search 
+                    </span>
+                    <span aria-hidden="true" class="hover-text">
+                        Search
+                    </span>
+                </button>
+                </li>
+                <li>
+                    <button class="button" onclick="window.location.href='/students'">
                         <span class="textini">
-                            Info 
+                            Students
                         </span>
                         <span aria-hidden="true" class="hover-text">
-                          Info 
+                            Students
                         </span>
                     </button>
                 </li>
+                {% endif %}
                 <li>
                     <button class="button" onclick="window.location.href='/edit'">
                         <span class="textini">
@@ -53,6 +63,7 @@
                     </button>
                 </li>
   
+                {% if user.role == 'admin' %}
                 <li>
                     <button class="button" onclick="window.location.href='/announcement'">
                         <span class="textini">
@@ -63,29 +74,35 @@
                         </span>
                     </button>
                 </li>
-  
+                {% endif %}
+
+                {% if user.role == 'admin' %}
                 <li>
-                    <button class="button" onclick="window.location.href='/sessions'">
+                    <button class="button" onclick="window.location.href='/sit-in'">
                         <span class="textini">
-                            Remaining Sessions 
+                            Sit-In
                         </span>
                         <span aria-hidden="true" class="hover-text">
-                            Remaining Sessions
+                            Sit-In
                         </span>
                     </button>
                 </li>
-  
+                {% endif %}
+
+                {% if user.role == 'admin' %}
                 <li>
-                    <button class="button" onclick="window.location.href='/history'">
+                    <button class="button" onclick="window.location.href='/sit-in-reports'">
                         <span class="textini">
-                            Sit-In History 
+                            Sit-In Reports
                         </span>
                         <span aria-hidden="true" class="hover-text">
-                            Sit-In History
-                        </span>
+                            Sit-In Reports
+                        </span> 
                     </button>
                 </li>
+                {% endif %}
   
+                {% if user.role == 'admin' %}
                 <li>
                     <button class="button" onclick="window.location.href='/reservations'">
                         <span class="textini">
@@ -96,7 +113,21 @@
                         </span>
                     </button>
                 </li>
-  
+                {% endif %}
+
+                {% if user.role == 'admin' %}
+                <li>
+                    <button class="button" onclick="window.location.href='/view-sit-in-records'">
+                        <span class="textini">
+                            View Sit In Records 
+                        </span>
+                        <span aria-hidden="true" class="hover-text">
+                            View Sit In Records 
+                        </span>
+                    </button>
+                </li>
+                {% endif %}
+
                 <!-- Logout Button -->
                 <li>
                     <button class="button" style="background-color: red; color: white;" onclick="window.location.href='/logout'">

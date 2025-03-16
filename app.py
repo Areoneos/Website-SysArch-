@@ -17,6 +17,32 @@ def query_db(query, args=(), one=False):
         conn.commit()
     return (result[0] if result else None) if one else result
 
+def get_current_user():
+    if 'user' not in session:
+        return None
+
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE username = ?", (session['user'],))
+    user = cursor.fetchone()
+    conn.close()
+
+    if user:
+        return {
+            "id_number": user[0],
+            "last_name": user[1],
+            "first_name": user[2],
+            "middle_name": user[3],
+            "course": user[4],
+            "year_level": user[5],
+            "email": user[6],
+            "username": user[7],
+            "password": user[8],
+            "profile_picture": user[9] if len(user) > 9 else None,
+            "role": user[10]
+        }
+    return None
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -35,6 +61,7 @@ def login():
 
         if user:
             session['user'] = user[7]  # Store username in session
+            session['role'] = user[10]  # Store role in session
             return redirect(url_for('dashboard'))  # Redirect to dashboard.html after login
         else:
             return render_template('login.html', error="Invalid credentials")
@@ -54,15 +81,16 @@ def register():
         email = request.form['email']
         username = request.form['username']
         password = request.form['password']
+        role = 'user'
 
         conn = connect_db()
         cursor = conn.cursor()
         
         try:
             cursor.execute("""
-                INSERT INTO users (id_number, last_name, first_name, middle_name, course, year_level, email, username, password) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""", 
-                (id_number, last_name, first_name, middle_name, course, year_level, email, username, password)
+                INSERT INTO users (id_number, last_name, first_name, middle_name, course, year_level, email, username, password, role) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", 
+                (id_number, last_name, first_name, middle_name, course, year_level, email, username, password, role)
             )
             conn.commit()
         except sqlite3.IntegrityError:
@@ -76,48 +104,24 @@ def register():
 
 @app.route('/dashboard')
 def dashboard():
-    if 'user' not in session:
+    user = get_current_user()
+    if not user:
         return redirect(url_for('login'))
 
-    # Fetch the current user's data from the database
+    # Fetch announcements
     conn = connect_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE username = ?", (session['user'],))
-    user = cursor.fetchone()
-
     cursor.execute("SELECT * FROM announcements ORDER BY created_at DESC")
     announcements = cursor.fetchall()
     conn.close()
 
-    if user:
-        # Convert the tuple to a dictionary for easier access in the template
-        user_data = {
-            "id_number": user[0],
-            "last_name": user[1],
-            "first_name": user[2],
-            "middle_name": user[3],
-            "course": user[4],
-            "year_level": user[5],
-            "email": user[6],
-            "username": user[7],
-            "password": user[8],
-            "profile_picture": user[9] if len(user) > 9 else None  # Add profile_picture field
-        }
-        return render_template('dashboard.html', user=user_data, announcements=announcements)
-    else:
-        return redirect(url_for('login'))
-
-@app.route('/info')
-def info():
-    if 'user' in session:
-        return render_template('info.html', username=session['user'])
-    return redirect(url_for('login'))
-
+    return render_template('dashboard.html', user=user, announcements=announcements)
 
 
 @app.route('/edit')
 def edit():
-    if 'user' not in session:
+    user = get_current_user()
+    if not user:
         return redirect(url_for('login'))
 
     # Fetch the current user's data from the database
@@ -143,11 +147,11 @@ def edit():
             "email": user[6],
             "username": user[7],
             "password": user[8],
-            "profile_picture": user[9] if len(user) > 9 else None  # Add profile_picture field
+            "profile_picture": user[9] if len(user) > 9 else None,  # Add profile_picture field
+            "role": user[10]
         }
         return render_template('edit.html', user=user_data)
-    else:
-        return redirect(url_for('login'))
+
 
 import os
 from flask import request, redirect, url_for, session, flash
@@ -169,7 +173,8 @@ def get_profile_pictures_folder():
 
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
-    if 'user' not in session:
+    user = get_current_user()
+    if not user:
         return redirect(url_for('login'))
 
     # Get the current username from the session
@@ -257,19 +262,20 @@ def update_profile():
 
 @app.route('/announcement')
 def announcement():
-    if 'user' not in session:
+    user = get_current_user()
+    if not user:
         return redirect(url_for('login'))
-    return render_template('announcement.html', username=session['user'])
+    return render_template('announcement.html', user=user, username=session['user'])
 
 @app.route('/post_announcement', methods=['POST'])
 def post_announcement():
-    if 'user' not in session:
+    user = get_current_user()
+    if not user:
         return redirect(url_for('login'))
 
     username = session['user']
     announcement = request.form['announcement']
 
-    # Save the announcement to the database
     conn = connect_db()
     cursor = conn.cursor()
     cursor.execute("INSERT INTO announcements (username, announcement) VALUES (?, ?)", (username, announcement))
@@ -279,23 +285,54 @@ def post_announcement():
     flash('Announcement posted successfully!', 'success')
     return redirect(url_for('dashboard'))
 
-@app.route('/sessions')
-def sessions():
-    if 'user' in session:
-        return render_template('sessions.html', username=session['user'])
-    return redirect(url_for('login'))
-
-@app.route('/history')
-def history():
-    if 'user' in session:
-        return render_template('history.html', username=session['user'])
-    return redirect(url_for('login'))
-
 @app.route('/reservations')
 def reservations():
-    if 'user' in session:
-        return render_template('reservations.html', username=session['user'])
-    return redirect(url_for('login'))
+    user = get_current_user()
+    if not user:
+        return redirect(url_for('login'))
+    return render_template('reservations.html', user=user, username=session['user'])
+
+@app.route('/feedback')
+def feedback():
+    user = get_current_user()
+    if not user:
+        return redirect(url_for('login'))
+    return render_template('feedback.html', user=user, username=session['user'])
+
+@app.route('/search')
+def search():
+    user = get_current_user()
+    if not user:
+        return redirect(url_for('login'))
+    return render_template('search.html', user=user, username=session['user'])
+
+@app.route('/sit-in-reports')
+def sit_in_reports():
+    user = get_current_user()
+    if not user:
+        return redirect(url_for('login'))
+    return render_template('sit-in-reports.html', user=user, username=session['user'])
+
+@app.route('/sit-in')
+def sit_in():
+    user = get_current_user()
+    if not user:
+        return redirect(url_for('login'))
+    return render_template('sit-in.html', user=user, username=session['user'])
+
+@app.route('/students')
+def students():
+    user = get_current_user()
+    if not user:
+        return redirect(url_for('login'))
+    return render_template('students.html', user=user, username=session['user'])
+
+@app.route('/view-sit-in-records')
+def view_sit_in_records():
+    user = get_current_user()
+    if not user:
+        return redirect(url_for('login'))
+    return render_template('view-sit-in-records.html', user=user, username=session['user'])
 
 @app.route('/logout')
 def logout():
