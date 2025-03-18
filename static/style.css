@@ -53,12 +53,33 @@ header {
 
 /* Navigation */
 nav {
-    float: left;
-    width: 20%;
-    height: 860px; /* Adjust as needed */
+    position: fixed;
+    left: -350px;
+    width: 350px;
+    height: 70vh; /* Adjust as needed */
     background: #303030;
     padding: 30px;
     border-radius: 10px;
+    transition: left 0.3s ease;
+    z-index: 1000;
+    overflow-y: auto;
+}
+
+nav::-webkit-scrollbar {
+    width: 8px;
+}
+
+nav::-webkit-scrollbar-track {
+    background: #303030;
+}
+
+nav::-webkit-scrollbar-thumb {
+    background: #b5b1b8;
+    border-radius: 4px;
+}
+
+nav:hover{
+    left: 0;
 }
 
 nav ul {
@@ -74,7 +95,10 @@ article {
     height: 100%; /* Adjust as needed */
     font-family: Garamond, serif;
     font-size: 18px;
+    margin-left: 0;
+    transition: margin-left 0.3s ease;
 }
+
 
 /* Clear floats */
 section::after {
@@ -192,6 +216,7 @@ button:active {
     grid-column-start: 2;
     grid-row-start: 2;
     margin-bottom: 20px;
+    margin-left: 50px;
     padding: 20px;
     background-color: #fff;
     border-radius: 10px;
@@ -468,42 +493,6 @@ a:hover {
     background-color: #4D0872;
 }
 
-/* Modal Styles */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.4);
-}
-
-.modal-content {
-    background-color: #fff;
-    margin: 10% auto;
-    padding: 20px;
-    border-radius: 10px;
-    width: 80%;
-    max-width: 400px;
-}
-
-.close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-}
-
-.close:hover,
-.close:focus {
-    color: black;
-    text-decoration: none;
-    cursor: pointer;
-}
-
 /* Success and Error Messages */
 .success {
     color: green;
@@ -521,4 +510,101 @@ a:hover {
         width: 100%;
         height: auto;
     }
+}
+
+/* Modal Styling */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: #000;
+}
+
+/* Form Group Styling */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input, .form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+/* Hidden Class */
+.hidden {
+    display: none;
+}
+
+/* Table Styling */
+#activeStudentsTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+#activeStudentsTable th, #activeStudentsTable td {
+    padding: 10px;
+    border: 1px solid #ccc;
+    text-align: left;
+}
+
+#activeStudentsTable th {
+    background-color: #700AA7;
+    color: #fff;
+}
+
+#activeStudentsTable tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+#activeStudentsTable tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* End Button Styling */
+.endButton {
+    background-color: #ff4d4d;
+    color: #fff;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.endButton:hover {
+    background-color: #cc0000;
 }
