@@ -343,5 +343,374 @@ def logout():
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_TYPE'] = 'filesystem'    
 
+def init_db():
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    # Create sit-in records table if it doesn't exist
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS sit_in_records (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id TEXT NOT NULL,
+            student_name TEXT NOT NULL,
+            purpose TEXT NOT NULL,
+            laboratory TEXT NOT NULL,
+            status TEXT NOT NULL,
+            start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            end_time TIMESTAMP,
+            FOREIGN KEY (student_id) REFERENCES users (id_number)
+        )
+    ''')
+    
+    # Create reservations table if it doesn't exist
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS reservations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id TEXT NOT NULL,
+            student_name TEXT NOT NULL,
+            purpose TEXT NOT NULL,
+            laboratory TEXT NOT NULL,
+            reservation_date DATE NOT NULL,
+            reservation_time TIME NOT NULL,
+            status TEXT NOT NULL DEFAULT 'Pending',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (student_id) REFERENCES users (id_number)
+        )
+    ''')
+    
+    # Check if sessions_remaining column exists in users table
+    cursor.execute("PRAGMA table_info(users)")
+    columns = [column[1] for column in cursor.fetchall()]
+    
+    if 'sessions_remaining' not in columns:
+        cursor.execute('''
+            ALTER TABLE users ADD COLUMN sessions_remaining INTEGER DEFAULT 30
+        ''')
+    
+    conn.commit()
+    conn.close()
+
+# Initialize database tables
+init_db()
+
+@app.route('/search_student', methods=['POST'])
+def search_student():
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    search_term = request.form.get('search_term', '')
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    # Search by ID number or name
+    cursor.execute('''
+        SELECT id_number, first_name, last_name 
+        FROM users 
+        WHERE id_number LIKE ? OR first_name LIKE ? OR last_name LIKE ?
+    ''', (f'%{search_term}%', f'%{search_term}%', f'%{search_term}%'))
+    
+    students = cursor.fetchall()
+    conn.close()
+    
+    if students:
+        return {
+            'success': True,
+            'student': {
+                'id_number': students[0][0],
+                'name': f"{students[0][1]} {students[0][2]}"
+            }
+        }
+    return {'error': 'Student not found'}, 404
+
+@app.route('/get_remaining_sessions', methods=['GET'])
+def get_remaining_sessions():
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    # Get student_id from query parameters if provided, otherwise use current user's ID
+    student_id = request.args.get('student_id', get_current_user()['id_number'])
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT sessions_remaining FROM users WHERE id_number = ?', (student_id,))
+    result = cursor.fetchone()
+    conn.close()
+    
+    if result:
+        return {'success': True, 'sessions_remaining': result[0]}
+    return {'error': 'User not found'}, 404
+
+@app.route('/start_sit_in', methods=['POST'])
+def start_sit_in():
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    student_id = request.form.get('student_id')
+    purpose = request.form.get('purpose')
+    laboratory = request.form.get('laboratory')
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    # Check if student is already active
+    cursor.execute('SELECT COUNT(*) FROM sit_in_records WHERE student_id = ? AND status = "Active"', (student_id,))
+    active_count = cursor.fetchone()[0]
+    
+    if active_count > 0:
+        conn.close()
+        return {'error': 'Student already has an active sit-in session'}, 400
+    
+    # Check remaining sessions
+    cursor.execute('SELECT first_name, last_name, sessions_remaining FROM users WHERE id_number = ?', (student_id,))
+    student = cursor.fetchone()
+    
+    if not student:
+        conn.close()
+        return {'error': 'Student not found'}, 404
+    
+    if student[2] <= 0:
+        conn.close()
+        return {'error': 'No remaining sessions'}, 400
+    
+    student_name = f"{student[0]} {student[1]}"
+    
+    try:
+        # Create sit-in record with current timestamp in local time
+        cursor.execute('''
+            INSERT INTO sit_in_records (student_id, student_name, purpose, laboratory, status, start_time)
+            VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%d %H:%M:%S', 'now', 'localtime'))
+        ''', (student_id, student_name, purpose, laboratory, 'Active'))
+        
+        # Decrease remaining sessions
+        cursor.execute('''
+            UPDATE users 
+            SET sessions_remaining = sessions_remaining - 1
+            WHERE id_number = ?
+        ''', (student_id,))
+        
+        conn.commit()
+        conn.close()
+        return {'success': True}
+        
+    except sqlite3.Error as e:
+        conn.rollback()
+        conn.close()
+        return {'error': f'Database error: {str(e)}'}, 500
+
+@app.route('/end_sit_in', methods=['POST'])
+def end_sit_in():
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    student_id = request.form.get('student_id')
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        UPDATE sit_in_records 
+        SET status = 'Inactive', end_time = CURRENT_TIMESTAMP
+        WHERE student_id = ? AND status = 'Active'
+    ''', (student_id,))
+    
+    conn.commit()
+    conn.close()
+    
+    return {'success': True}
+
+@app.route('/get_active_sit_ins', methods=['GET'])
+def get_active_sit_ins():
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT student_id, student_name, purpose, laboratory,
+               strftime('%Y-%m-%d', start_time) as start_date,
+               strftime('%H:%M', start_time) as start_time
+        FROM sit_in_records
+        WHERE status = 'Active'
+        ORDER BY start_time DESC
+    ''')
+    
+    active_sit_ins = cursor.fetchall()
+    conn.close()
+    
+    return {
+        'success': True,
+        'active_sit_ins': [
+            {
+                'student_id': record[0],
+                'student_name': record[1],
+                'purpose': record[2],
+                'laboratory': record[3],
+                'start_date': record[4],
+                'start_time': record[5]
+            }
+            for record in active_sit_ins
+        ]
+    }
+
+@app.route('/create_reservation', methods=['POST'])
+def create_reservation():
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    # Get current user's ID
+    student_id = get_current_user()['id_number']
+    purpose = request.form.get('purpose')
+    laboratory = request.form.get('laboratory')
+    reservation_date = request.form.get('reservation_date')
+    reservation_time = request.form.get('reservation_time')
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    # Get student name and check remaining sessions
+    cursor.execute('SELECT first_name, last_name, sessions_remaining FROM users WHERE id_number = ?', (student_id,))
+    student = cursor.fetchone()
+    
+    if not student:
+        conn.close()
+        return {'error': 'Student not found'}, 404
+    
+    if student[2] <= 0:
+        conn.close()
+        return {'error': 'No remaining sessions'}, 400
+    
+    student_name = f"{student[0]} {student[1]}"
+    
+    # Create reservation record
+    cursor.execute('''
+        INSERT INTO reservations (student_id, student_name, purpose, laboratory, reservation_date, reservation_time, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (student_id, student_name, purpose, laboratory, reservation_date, reservation_time, 'Pending'))
+    
+    conn.commit()
+    conn.close()
+    
+    return {'success': True}
+
+@app.route('/get_user_reservations', methods=['GET'])
+def get_user_reservations():
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    student_id = get_current_user()['id_number']
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT id, purpose, laboratory, reservation_date, reservation_time, status, created_at
+        FROM reservations
+        WHERE student_id = ?
+        ORDER BY created_at DESC
+    ''', (student_id,))
+    
+    reservations = cursor.fetchall()
+    conn.close()
+    
+    return {
+        'success': True,
+        'reservations': [
+            {
+                'id': record[0],
+                'purpose': record[1],
+                'laboratory': record[2],
+                'reservation_date': record[3],
+                'reservation_time': record[4],
+                'status': record[5],
+                'created_at': record[6]
+            }
+            for record in reservations
+        ]
+    }
+
+@app.route('/get_pending_reservations', methods=['GET'])
+def get_pending_reservations():
+    if not get_current_user() or get_current_user()['role'] != 'admin':
+        return {'error': 'Not authorized'}, 403
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT id, student_id, student_name, purpose, laboratory, reservation_date, reservation_time, created_at
+        FROM reservations
+        WHERE status = 'Pending'
+        ORDER BY created_at DESC
+    ''')
+    
+    reservations = cursor.fetchall()
+    conn.close()
+    
+    return {
+        'success': True,
+        'reservations': [
+            {
+                'id': record[0],
+                'student_id': record[1],
+                'student_name': record[2],
+                'purpose': record[3],
+                'laboratory': record[4],
+                'reservation_date': record[5],
+                'reservation_time': record[6],
+                'created_at': record[7]
+            }
+            for record in reservations
+        ]
+    }
+
+@app.route('/update_reservation_status', methods=['POST'])
+def update_reservation_status():
+    if not get_current_user() or get_current_user()['role'] != 'admin':
+        return {'error': 'Not authorized'}, 403
+    
+    reservation_id = request.form.get('reservation_id')
+    status = request.form.get('status')
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    if status == 'Approved':
+        # Get reservation details
+        cursor.execute('''
+            SELECT student_id, student_name, purpose, laboratory, reservation_date, reservation_time
+            FROM reservations
+            WHERE id = ?
+        ''', (reservation_id,))
+        reservation = cursor.fetchone()
+        
+        if reservation:
+            # Create sit-in record with current timestamp in local time (same as direct sit-in)
+            cursor.execute('''
+                INSERT INTO sit_in_records (student_id, student_name, purpose, laboratory, status, start_time)
+                VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%d %H:%M:%S', 'now', 'localtime'))
+            ''', (reservation[0], reservation[1], reservation[2], reservation[3], 'Active'))
+            
+            # Decrease remaining sessions
+            cursor.execute('''
+                UPDATE users 
+                SET sessions_remaining = sessions_remaining - 1
+                WHERE id_number = ?
+            ''', (reservation[0],))
+    
+    # Update reservation status
+    cursor.execute('''
+        UPDATE reservations
+        SET status = ?
+        WHERE id = ?
+    ''', (status, reservation_id))
+    
+    conn.commit()
+    conn.close()
+    
+    return {'success': True}
+
 if __name__ == '__main__':
     app.run(debug=True)

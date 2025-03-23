@@ -151,10 +151,43 @@
                 <span aria-hidden="true" class="hover-text">Sit-In</span>
             </button>
 
-            <!-- Sit-In Modal -->
-            <div id="sitInModal" class="modal">
+            <!-- Pending Reservations Button (Admin Only) -->
+            {% if user.role == 'admin' %}
+            <button class="button" id="pendingReservationsButton">
+                <span class="textini">Pending Reservations</span>
+                <span aria-hidden="true" class="hover-text">Pending Reservations</span>
+            </button>
+            {% endif %}
+
+            <!-- Pending Reservations Modal -->
+            <div id="pendingReservationsModal" class="modal">
                 <div class="modal-content">
                     <span class="close">&times;</span>
+                    <h2>Pending Reservations</h2>
+                    <div class="table-container">
+                        <table id="pendingReservationsTable">
+                            <thead>
+                                <tr>
+                                    <th>Student ID</th>
+                                    <th>Student Name</th>
+                                    <th>Purpose</th>
+                                    <th>Laboratory</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Rows will be dynamically populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sit-In Modal -->
+            <div id="sitInModal" class="modal">
+                <div class="modal-content">                    
                     <h2>Sit-In Request</h2>
 
                     <!-- Search Student Field -->
@@ -187,6 +220,9 @@
                         <select id="laboratory">
                             <option value="524">524</option>
                             <option value="526">526</option>
+                            <option value="542">542</option>
+                            <option value="528">544</option>
+                            <option value="MAC">MAC</option>
                             <!-- Add more options as needed -->
                         </select>
                     </div>
@@ -213,7 +249,8 @@
                         <th>Name</th>
                         <th>Purpose</th>
                         <th>Laboratory</th>
-                        <th>Sessions</th>
+                        <th>Date</th>
+                        <th>Time</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -261,66 +298,315 @@
         }
     };
 
-    // Search functionality (mock data for now)
+    // Search functionality
     const searchButton = document.getElementById("searchButton");
     const studentDetails = document.getElementById("studentDetails");
     const studentId = document.getElementById("studentId");
     const studentName = document.getElementById("studentName");
+    const remainingSessions = document.getElementById("remainingSessions");
+    let currentStudentId = null;
 
-    searchButton.onclick = function() {
+    // Function to check if student is already active
+    async function checkStudentActive(studentId) {
+        try {
+            const response = await fetch('/get_active_sit_ins');
+            const data = await response.json();
+            
+            if (data.success) {
+                return data.active_sit_ins.some(student => student.student_id === studentId);
+            }
+            return false;
+        } catch (error) {
+            console.error('Error:', error);
+            return false;
+        }
+    }
+
+    // Function to get student's remaining sessions
+    async function getStudentRemainingSessions(studentId) {
+        try {
+            const response = await fetch(`/get_remaining_sessions?student_id=${encodeURIComponent(studentId)}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                return data.sessions_remaining;
+            }
+            return null;
+        } catch (error) {
+            console.error('Error:', error);
+            return null;
+        }
+    }
+
+    searchButton.onclick = async function() {
         const searchTerm = document.getElementById("searchStudent").value;
+        
+        if (!searchTerm.trim()) {
+            alert("Please enter a student ID or name");
+            return;
+        }
 
-        // Mock data for demonstration
-        if (searchTerm === "12345") {
-            studentId.textContent = "12345";
-            studentName.textContent = "John Doe";
-            studentDetails.classList.remove("hidden");
-        } else {
-            alert("Student not found!");
+        try {
+            const response = await fetch('/search_student', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `search_term=${encodeURIComponent(searchTerm)}`
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Check if student is already active
+                const isActive = await checkStudentActive(data.student.id_number);
+                if (isActive) {
+                    alert("This student already has an active sit-in session!");
+                    return;
+                }
+
+                // Get remaining sessions
+                const sessions = await getStudentRemainingSessions(data.student.id_number);
+                if (sessions === null) {
+                    alert("Error fetching remaining sessions");
+                    return;
+                }
+                if (sessions <= 0) {
+                    alert("This student has no remaining sessions!");
+                    return;
+                }
+
+                currentStudentId = data.student.id_number;
+                studentId.textContent = data.student.id_number;
+                studentName.textContent = data.student.name;
+                remainingSessions.textContent = sessions;
+                studentDetails.classList.remove("hidden");
+            } else {
+                alert("Student not found!");
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert("Error searching for student");
         }
     };
 
     // Grant Sit-In functionality
     const grantSitInButton = document.getElementById("grantSitInButton");
-    grantSitInButton.onclick = function() {
+    grantSitInButton.onclick = async function() {
+        if (!currentStudentId) {
+            alert("Please search for a student first");
+            return;
+        }
+
+        // Check if student is already active (double-check)
+        const isActive = await checkStudentActive(currentStudentId);
+        if (isActive) {
+            alert("This student already has an active sit-in session!");
+            return;
+        }
+
+        // Check remaining sessions again
+        const sessions = await getStudentRemainingSessions(currentStudentId);
+        if (sessions === null) {
+            alert("Error fetching remaining sessions");
+            return;
+        }
+        if (sessions <= 0) {
+            alert("This student has no remaining sessions!");
+            return;
+        }
+
         const purpose = document.getElementById("purpose").value;
         const laboratory = document.getElementById("laboratory").value;
-        const remainingSessions = document.getElementById("remainingSessions");
 
-        // Decrease remaining sessions
-        let sessions = parseInt(remainingSessions.textContent);
-        if (sessions > 0) {
-            sessions -= 1;
-            remainingSessions.textContent = sessions;
-
-            // Add student to active students table
-            const table = document.getElementById("activeStudentsTable").getElementsByTagName("tbody")[0];
-            const newRow = table.insertRow();
-            newRow.innerHTML = `
-                <td>12345</td>
-                <td>John Doe</td>
-                <td>${purpose}</td>
-                <td>${laboratory}</td>
-                <td>${sessions}</td>
-                <td>Active</td>
-                <td><button class="endButton">End</button></td>
-            `;
-
-            // Close modal
-            sitInModal.style.display = "none";
-        } else {
-            alert("No remaining sessions!");
+        try {
+            const response = await fetch('/start_sit_in', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `student_id=${encodeURIComponent(currentStudentId)}&purpose=${encodeURIComponent(purpose)}&laboratory=${encodeURIComponent(laboratory)}`
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Refresh active students table
+                loadActiveStudents();
+                // Close modal
+                sitInModal.style.display = "none";
+                // Reset form
+                document.getElementById("searchStudent").value = "";
+                studentDetails.classList.add("hidden");
+                currentStudentId = null;
+            } else {
+                alert(data.error || "Error starting sit-in session");
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert("Error starting sit-in session");
         }
     };
 
+    // Load active students
+    async function loadActiveStudents() {
+        try {
+            const response = await fetch('/get_active_sit_ins');
+            const data = await response.json();
+            
+            if (data.success) {
+                const table = document.getElementById("activeStudentsTable").getElementsByTagName("tbody")[0];
+                table.innerHTML = ''; // Clear existing rows
+                
+                data.active_sit_ins.forEach(student => {
+                    // Format the date
+                    const date = new Date(student.start_date);
+                    const formattedDate = date.toLocaleDateString('en-US', {
+                        month: '2-digit',
+                        day: '2-digit',
+                        year: 'numeric'
+                    });
+
+                    // Parse the time string
+                    const [hours, minutes] = student.start_time.split(':');
+                    const hour = parseInt(hours);
+                    const ampm = hour >= 12 ? 'PM' : 'AM';
+                    const hour12 = hour % 12 || 12;
+                    const formattedTime = `${String(hour12).padStart(2, '0')}:${minutes} ${ampm}`;
+
+                    const newRow = table.insertRow();
+                    newRow.innerHTML = `
+                        <td>${student.student_id}</td>
+                        <td>${student.student_name}</td>
+                        <td>${student.purpose}</td>
+                        <td>${student.laboratory}</td>
+                        <td>${formattedDate}</td>
+                        <td>${formattedTime}</td>
+                        <td>Active</td>
+                        <td><button class="endButton" data-student-id="${student.student_id}">End</button></td>
+                    `;
+                });
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
     // End Session functionality
-    document.addEventListener("click", function(event) {
+    document.addEventListener("click", async function(event) {
         if (event.target.classList.contains("endButton")) {
-            const row = event.target.closest("tr");
-            row.cells[5].textContent = "Inactive"; // Update status
-            event.target.disabled = true; // Disable the End button
+            const studentId = event.target.dataset.studentId;
+            
+            try {
+                const response = await fetch('/end_sit_in', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `student_id=${encodeURIComponent(studentId)}`
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Refresh active students table
+                    loadActiveStudents();
+                } else {
+                    alert("Error ending sit-in session");
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert("Error ending sit-in session");
+            }
         }
     });
+
+    // Load active students when page loads
+    document.addEventListener('DOMContentLoaded', loadActiveStudents);
+
+    // Pending Reservations Functionality
+    {% if user.role == 'admin' %}
+    const pendingReservationsModal = document.getElementById("pendingReservationsModal");
+    const pendingReservationsButton = document.getElementById("pendingReservationsButton");
+
+    // Load pending reservations
+    async function loadPendingReservations() {
+        try {
+            const response = await fetch('/get_pending_reservations');
+            const data = await response.json();
+            
+            if (data.success) {
+                const table = document.getElementById("pendingReservationsTable").getElementsByTagName("tbody")[0];
+                table.innerHTML = ''; // Clear existing rows
+                
+                data.reservations.forEach(reservation => {
+                    const newRow = table.insertRow();
+                    newRow.innerHTML = `
+                        <td>${reservation.student_id}</td>
+                        <td>${reservation.student_name}</td>
+                        <td>${reservation.purpose}</td>
+                        <td>${reservation.laboratory}</td>
+                        <td>${reservation.reservation_date}</td>
+                        <td>${reservation.reservation_time}</td>
+                        <td>
+                            <button class="approveButton" data-reservation-id="${reservation.id}">Approve</button>
+                            <button class="rejectButton" data-reservation-id="${reservation.id}">Reject</button>
+                        </td>
+                    `;
+                });
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    // Open pending reservations modal
+    pendingReservationsButton.onclick = function() {
+        pendingReservationsModal.style.display = "block";
+        loadPendingReservations();
+    };
+
+    // Close pending reservations modal
+    document.querySelectorAll('.close').forEach(closeBtn => {
+        closeBtn.onclick = function() {
+            pendingReservationsModal.style.display = "none";
+        };
+    });
+
+    // Handle reservation status updates
+    document.addEventListener("click", async function(event) {
+        if (event.target.classList.contains("approveButton") || event.target.classList.contains("rejectButton")) {
+            const reservationId = event.target.dataset.reservationId;
+            const status = event.target.classList.contains("approveButton") ? "Approved" : "Rejected";
+            
+            try {
+                const response = await fetch('/update_reservation_status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `reservation_id=${encodeURIComponent(reservationId)}&status=${encodeURIComponent(status)}`
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Refresh pending reservations
+                    loadPendingReservations();
+                    // Refresh active students if approved
+                    if (status === "Approved") {
+                        loadActiveStudents();
+                    }
+                } else {
+                    alert("Error updating reservation status");
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert("Error updating reservation status");
+            }
+        }
+    });
+    {% endif %}
 </script>
 
 

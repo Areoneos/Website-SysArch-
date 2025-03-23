@@ -1,12 +1,11 @@
 /* Basic styling */
 .body {
-    font-family: Arial, sans-serif;
-    background-size: cover;
-    background-position: center;
-    background-image: linear-gradient(to right, rgb(189, 65, 189), rgb(63, 0, 63));    
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     margin: 0;
     padding: 0;
-    height: 100vh;
+    min-height: 100vh;
+    color: #fff;
 }
 
 .logbody {
@@ -26,22 +25,25 @@
 
 /* Header */
 header {
-    background-color: #700AA7;
-    padding: 10px;
+    background: rgba(26, 26, 46, 0.95);
+    padding: 1rem;
     text-align: center;
-    font-size: 25px;
-    color: whitesmoke;
-    font-family: Verdana, sans-serif;
-    border-radius: 2px;
+    font-size: 1.5rem;
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
 .titleh1 {
-    background: linear-gradient(to right, rgb(255, 238, 0), rgb(255, 0, 0));
+    background: linear-gradient(45deg, #ff6b6b, #ffd93d);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    color: transparent;
-} 
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
 
 .dash-container {
     display: grid;
@@ -54,51 +56,34 @@ header {
 /* Navigation */
 nav {
     position: fixed;
-    left: -350px;
-    width: 350px;
-    height: 70vh; /* Adjust as needed */
-    background: #303030;
-    padding: 30px;
-    border-radius: 10px;
+    left: -300px;
+    width: 300px;
+    height: 80vh;
+    background: rgba(26, 26, 46, 0.95);
+    padding: 2rem;
     transition: left 0.3s ease;
     z-index: 1000;
     overflow-y: auto;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
 }
 
-nav::-webkit-scrollbar {
-    width: 8px;
-}
-
-nav::-webkit-scrollbar-track {
-    background: #303030;
-}
-
-nav::-webkit-scrollbar-thumb {
-    background: #b5b1b8;
-    border-radius: 4px;
-}
-
-nav:hover{
+nav:hover {
     left: 0;
 }
 
 nav ul {
     list-style-type: none;
-    padding: 20px;
+    padding: 0;
+    margin: 0;
 }
 
 /* Article (Main Content) */
 article {
-    padding: 25px;
-    width: 98%;
-    background-image: linear-gradient(to right, rgb(189, 65, 189), rgb(63, 0, 63));  
-    height: 100%; /* Adjust as needed */
-    font-family: Garamond, serif;
-    font-size: 18px;
+    padding: 2rem;
     margin-left: 0;
     transition: margin-left 0.3s ease;
+    min-height: calc(100vh - 60px);
 }
-
 
 /* Clear floats */
 section::after {
@@ -109,10 +94,13 @@ section::after {
 
 /* Footer */
 footer {
-    background-color: #460066;
-    padding: 5px;
+    background: rgba(26, 26, 46, 0.95);
+    padding: 1rem;
     text-align: center;
-    color: ghostwhite;
+    color: #fff;
+    position: relative;
+    bottom: 0;
+    width: 100%;
 }
 
 /* Buttons */
@@ -193,7 +181,7 @@ button:active {
 }
 
 .button span:after {
-    content: '\00bb';
+    content: '';
     opacity: 0;
     top: 0;
     right: -30px;
@@ -493,6 +481,11 @@ a:hover {
     background-color: #4D0872;
 }
 
+.sit-in-container {
+    margin-left: 80px; /* Add margin to prevent navbar overlap */
+    width: calc(100% - 60px); /* Adjust width to account for margin */
+}
+
 /* Success and Error Messages */
 .success {
     color: green;
@@ -505,10 +498,30 @@ a:hover {
 }
 
 /* Responsive Layout */
-@media (max-width: 600px) {
-    nav, article {
+@media (max-width: 768px) {
+    nav {
+        left: -100%;
         width: 100%;
-        height: auto;
+    }
+
+    nav:hover {
+        left: 0;
+    }
+
+    article {
+        padding: 1rem;
+    }
+
+    .modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+
+    #activeStudentsTable {
+        display: block;
+        overflow-x: auto;
+        margin-left: 60px; /* Add margin to prevent navbar overlap */
+        width: calc(100% - 60px); /* Adjust width to account for margin */
     }
 }
 
@@ -516,52 +529,75 @@ a:hover {
 .modal {
     display: none;
     position: fixed;
-    z-index: 1000;
-    left: 0;
     top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 2000;
+    backdrop-filter: blur(5px);
 }
 
 .modal-content {
-    background-color: #fff;
-    margin: 10% auto;
-    padding: 20px;
-    border-radius: 10px;
+    background: #1a1a2e;
+    margin: 5% auto;
+    padding: 2rem;
     width: 90%;
-    max-width: 500px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    max-width: 1250px; /* Increased max-width for better table display */
+    max-height: 80vh;
+    overflow-y: auto;
+    border-radius: 15px;
+    position: relative;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    color: #fff;
 }
 
 .close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
+    position: absolute;
+    right: 1.5rem;
+    top: 1rem;
+    font-size: 1.5rem;
     cursor: pointer;
+    color: #ff6b6b;
+    transition: color 0.3s ease;
 }
 
 .close:hover {
-    color: #000;
+    color: #ffd93d;
 }
 
 /* Form Group Styling */
 .form-group {
-    margin-bottom: 15px;
+    margin-bottom: 1.5rem;
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: #ffd93d;
+    font-weight: 500;
 }
 
-.form-group input, .form-group select {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+.form-group input {
+    width: 95%;
+    padding: 0.8rem;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: rgba(156, 149, 149, 0.05);
+    color: #fff;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-group select {
+    color: #383838;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #ff6b6b;
+    background: rgba(255, 255, 255, 0.1);
 }
 
 /* Hidden Class */
@@ -570,41 +606,185 @@ a:hover {
 }
 
 /* Table Styling */
-#activeStudentsTable {
+#activeStudentsTable, #reservationHistoryTable, #pendingReservationsTable {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
+    margin-top: 2rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    overflow: hidden;
 }
 
-#activeStudentsTable th, #activeStudentsTable td {
-    padding: 10px;
-    border: 1px solid #ccc;
+#activeStudentsTable th,
+#activeStudentsTable td,
+#reservationHistoryTable th,
+#reservationHistoryTable td,
+#pendingReservationsTable td,
+#pendingReservationsTable th {
+    padding: 1rem;
     text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-#activeStudentsTable th {
-    background-color: #700AA7;
-    color: #fff;
-}
-
-#activeStudentsTable tr:nth-child(even) {
-    background-color: #f9f9f9;
+#activeStudentsTable th,
+#reservationHistoryTable th,
+#pendingReservationsTable th {
+    background: rgba(255, 107, 107, 0.2);
+    color: #ffd93d;
+    font-weight: 600;
 }
 
 #activeStudentsTable tr:hover {
-    background-color: #f1f1f1;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+
+#reservationHistoryTable tr:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#pendingReservationsTable tr:hover {
+    background: rgba(255, 255, 255, 0.1);
 }
 
 /* End Button Styling */
 .endButton {
-    background-color: #ff4d4d;
-    color: #fff;
+    background: #ff6b6b;
+    color: white;
     border: none;
-    padding: 5px 10px;
+    padding: 0.5rem 1rem;
     border-radius: 5px;
     cursor: pointer;
+    transition: all 0.3s ease;
 }
 
 .endButton:hover {
-    background-color: #cc0000;
+    background: #ff4757;
+    transform: translateY(-2px);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-content {
+    animation: fadeIn 0.3s ease;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #ff6b6b;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #ff4757;
+}
+
+/* Table Container Styles */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    margin-top: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 10px;
+}
+
+/* Pending Reservations Table Styles */
+#pendingReservationsTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+    background: transparent;
+}
+
+#pendingReservationsTable th,
+#pendingReservationsTable td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    white-space: nowrap;
+}
+
+#pendingReservationsTable th {
+    background: rgba(255, 107, 107, 0.2);
+    color: #ffd93d;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+#pendingReservationsTable tr:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Button Styles in Table */
+.approveButton,
+.rejectButton {
+    margin: 2px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.approveButton {
+    background-color: #4CAF50;
+    color: white;
+    max-width: 200px;
+}
+
+.rejectButton {
+    background-color: #f44336;
+    color: white;
+    max-width: 200px;
+}
+
+.approveButton:hover {
+    background-color: #45a049;
+    transform: translateY(-2px);
+}
+
+.rejectButton:hover {
+    background-color: #da190b;
+    transform: translateY(-2px);
+}
+
+/* Modal Responsive Design */
+@media screen and (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        margin: 2% auto;
+        padding: 1.5rem;
+    }
+
+    .table-container {
+        margin-top: 15px;
+        padding: 5px;
+    }
+
+    #pendingReservationsTable th,
+    #pendingReservationsTable td {
+        padding: 10px;
+    }
+
+    .approveButton,
+    .rejectButton {
+        padding: 6px 12px;
+        font-size: 14px;
+    }
 }

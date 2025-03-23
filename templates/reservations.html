@@ -144,15 +144,80 @@
   
     </nav>
   <article>
-    <h1>Web Development</h1>
-    <p1><b>Web development</b> is the work involved in developing a website for the <b>Internet (World Wide Web)</b> or an <b>intranet (a private network)</b>.Web development can range from developing a simple single static page of plain text to complex web applications, electronic businesses, and social network services. A more comprehensive list of tasks to which Web development commonly refers, may include <b>Web engineering, Web design, Web content development, client liaison, client-side/server-side scripting, Web server and network security configuration, and e-commerce development.</b><br>
-  <br>
-Among Web professionals, <b>"Web development"</b> usually refers to the main non-design aspects of building Web sites: writing markup and coding. Web development may use <b>Content Management Systems (CMS)</b> to make content changes easier and available with basic technical skills.<br>
-<br>
-For larger organizations and businesses, Web development teams can consist of hundreds of people (Web developers) and follow standard methods like <b>Agile methodologies</b> while developing Web sites. Smaller organizations may only require a single permanent or contracting developer, or secondary assignment to related job positions such as a graphic designer or information systems technician. Web development may be a collaborative effort between departments rather than the domain of a designated department. <br>
-<br>There are <b>three kinds of Web developer specialization: front-end developer, back-end developer, and full-stack developer.</b> Front-end developers are responsible for <b>behavior and visuals</b> that run in the user browser, while back-end developers deal with the <b>servers</b>. Since the commercialization of the Web with  <b style="color: red;">Tim Berners-Lee</b> developing the World Wide Web at <b>CERN</b>, the industry has boomed and has become one of the most used technologies ever.</p1>
-    
-    
+    <div class="reservations-container">
+      <!-- Reserve Button -->
+      <button class="button" id="reserveButton">
+        <span class="textini">Make Reservation</span>
+        <span aria-hidden="true" class="hover-text">Make Reservation</span>
+      </button>
+
+      <!-- Remaining Sessions Display -->
+      <div class="sessions-info">
+        <h3>Remaining Sessions: <span id="remainingSessions">Loading...</span></h3>
+      </div>
+
+      <!-- Reservation Modal -->
+      <div id="reservationModal" class="modal">
+        <div class="modal-content">
+          <span class="close">&times;</span>
+          <h2>Make a Reservation</h2>
+
+          <!-- Purpose Dropdown -->
+          <div class="form-group">
+            <label for="purpose">Purpose:</label>
+            <select id="purpose">
+              <option value="C Programming">C Programming</option>
+              <option value="Java">Java</option>
+              <option value="Python">Python</option>
+            </select>
+          </div>
+
+          <!-- Laboratory Room Dropdown -->
+          <div class="form-group">
+            <label for="laboratory">Laboratory Room:</label>
+            <select id="laboratory">
+              <option value="524">524</option>
+              <option value="526">526</option>
+            </select>
+          </div>
+
+          <!-- Date and Time -->
+          <div class="form-group">
+            <label for="reservationDate">Date:</label>
+            <input type="date" id="reservationDate" required>
+          </div>
+
+          <div class="form-group">
+            <label for="reservationTime">Time:</label>
+            <input type="time" id="reservationTime" required>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="form-group">
+            <button id="cancelReservationButton">Cancel</button>
+            <button id="submitReservationButton">Submit Reservation</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reservation History Table -->
+      <h2>Reservation History</h2>
+      <table id="reservationHistoryTable">
+        <thead>
+          <tr>
+            <th>Purpose</th>
+            <th>Laboratory</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Status</th>
+            <th>Created At</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Rows will be dynamically populated -->
+        </tbody>
+      </table>
+    </div>
   </article>
 </section>
 <footer>
@@ -162,6 +227,158 @@ For larger organizations and businesses, Web development teams can consist of hu
   </script>
 </footer>
 
+<!-- JavaScript for Reservation Functionality -->
+<script>
+    // Get modal elements
+    const reservationModal = document.getElementById("reservationModal");
+    const reserveButton = document.getElementById("reserveButton");
+    const closeModal = document.getElementsByClassName("close")[0];
+    const cancelReservationButton = document.getElementById("cancelReservationButton");
+
+    // Load remaining sessions
+    async function loadRemainingSessions() {
+        try {
+            const response = await fetch('/get_remaining_sessions');
+            const data = await response.json();
+            
+            if (data.success) {
+                document.getElementById('remainingSessions').textContent = data.sessions_remaining;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    // Load reservation history
+    async function loadReservationHistory() {
+        try {
+            const response = await fetch('/get_user_reservations');
+            const data = await response.json();
+            
+            if (data.success) {
+                const table = document.getElementById("reservationHistoryTable").getElementsByTagName("tbody")[0];
+                table.innerHTML = ''; // Clear existing rows
+                
+                data.reservations.forEach(reservation => {
+                    const newRow = table.insertRow();
+                    newRow.innerHTML = `
+                        <td>${reservation.purpose}</td>
+                        <td>${reservation.laboratory}</td>
+                        <td>${reservation.reservation_date}</td>
+                        <td>${reservation.reservation_time}</td>
+                        <td>${reservation.status}</td>
+                        <td>${new Date(reservation.created_at).toLocaleString()}</td>
+                    `;
+                });
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    // Open modal when Reserve button is clicked
+    reserveButton.onclick = function() {
+        reservationModal.style.display = "block";
+    };
+
+    // Close modal when close button (x) is clicked
+    closeModal.onclick = function() {
+        reservationModal.style.display = "none";
+    };
+
+    // Close modal when Cancel button is clicked
+    cancelReservationButton.onclick = function() {
+        reservationModal.style.display = "none";
+    };
+
+    // Close modal when clicking outside the modal
+    window.onclick = function(event) {
+        if (event.target === reservationModal) {
+            reservationModal.style.display = "none";
+        }
+    };
+
+    // Submit reservation
+    document.getElementById("submitReservationButton").onclick = async function() {
+        const purpose = document.getElementById("purpose").value;
+        const laboratory = document.getElementById("laboratory").value;
+        const reservationDate = document.getElementById("reservationDate").value;
+        const reservationTime = document.getElementById("reservationTime").value;
+
+        // Validate date and time
+        const now = new Date();
+        const selectedDateTime = new Date(reservationDate + 'T' + reservationTime);
+        
+        if (selectedDateTime < now) {
+            alert("Cannot make reservations for past dates and times!");
+            return;
+        }
+
+        try {
+            const response = await fetch('/create_reservation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `purpose=${encodeURIComponent(purpose)}&laboratory=${encodeURIComponent(laboratory)}&reservation_date=${encodeURIComponent(reservationDate)}&reservation_time=${encodeURIComponent(reservationTime)}`
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Refresh reservation history
+                loadReservationHistory();
+                // Refresh remaining sessions
+                loadRemainingSessions();
+                // Close modal
+                reservationModal.style.display = "none";
+                // Reset form
+                document.getElementById("purpose").value = "C Programming";
+                document.getElementById("laboratory").value = "524";
+                document.getElementById("reservationDate").value = "";
+                document.getElementById("reservationTime").value = "";
+            } else {
+                alert(data.error || "Error creating reservation");
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert("Error creating reservation");
+        }
+    };
+
+    // Set minimum date and time for reservation inputs
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateInput = document.getElementById("reservationDate");
+        const timeInput = document.getElementById("reservationTime");
+        
+        // Set minimum date to today
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        dateInput.min = `${yyyy}-${mm}-${dd}`;
+        
+        // Update minimum time when date changes
+        function updateMinTime() {
+            const selectedDate = new Date(dateInput.value);
+            const now = new Date();
+            
+            if (selectedDate.toDateString() === now.toDateString()) {
+                const HH = String(now.getHours()).padStart(2, '0');
+                const MM = String(now.getMinutes()).padStart(2, '0');
+                timeInput.min = `${HH}:${MM}`;
+            } else {
+                timeInput.min = ""; // No minimum time for future dates
+            }
+        }
+        
+        dateInput.addEventListener('change', updateMinTime);
+        updateMinTime(); // Initial call
+        
+        loadRemainingSessions();
+        loadReservationHistory();
+    });
+</script>
 
 <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
