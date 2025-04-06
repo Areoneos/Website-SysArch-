@@ -144,15 +144,32 @@
   
     </nav>
   <article>
-    <h1>Web Development</h1>
-    <p1><b>Web development</b> is the work involved in developing a website for the <b>Internet (World Wide Web)</b> or an <b>intranet (a private network)</b>.Web development can range from developing a simple single static page of plain text to complex web applications, electronic businesses, and social network services. A more comprehensive list of tasks to which Web development commonly refers, may include <b>Web engineering, Web design, Web content development, client liaison, client-side/server-side scripting, Web server and network security configuration, and e-commerce development.</b><br>
-  <br>
-Among Web professionals, <b>"Web development"</b> usually refers to the main non-design aspects of building Web sites: writing markup and coding. Web development may use <b>Content Management Systems (CMS)</b> to make content changes easier and available with basic technical skills.<br>
-<br>
-For larger organizations and businesses, Web development teams can consist of hundreds of people (Web developers) and follow standard methods like <b>Agile methodologies</b> while developing Web sites. Smaller organizations may only require a single permanent or contracting developer, or secondary assignment to related job positions such as a graphic designer or information systems technician. Web development may be a collaborative effort between departments rather than the domain of a designated department. <br>
-<br>There are <b>three kinds of Web developer specialization: front-end developer, back-end developer, and full-stack developer.</b> Front-end developers are responsible for <b>behavior and visuals</b> that run in the user browser, while back-end developers deal with the <b>servers</b>. Since the commercialization of the Web with  <b style="color: red;">Tim Berners-Lee</b> developing the World Wide Web at <b>CERN</b>, the industry has boomed and has become one of the most used technologies ever.</p1>
+    <div class="search-container">
+      <h2>Registered Users</h2>
+      <form id="searchForm" class="search-form">
+        <div class="form-group">
+          <input type="text" id="searchInput" placeholder="Search by ID number or name..." onkeyup="filterTable()">
+        </div>
+      </form>
+      <table id="usersTable">
+        <thead>
+          <tr>
+            <th>ID Number</th>
+            <th>Name</th>
+            <th>Course</th>
+            <th>Year Level</th>
+            <th>Email</th>
+            <th>Sessions Remaining</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+
+    </div>
     
-    
+        
+      
   </article>
 </section>
 <footer>
@@ -165,5 +182,136 @@ For larger organizations and businesses, Web development teams can consist of hu
 
 <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+
+<style>
+  .search-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .search-container h2 {
+    color: #ffd93d;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+
+  .search-form {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .search-form .form-group {
+    flex: 1;
+  }
+
+  .search-form input {
+    width: 100%;
+    padding: 0.8rem;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    font-size: 1rem;
+  }
+
+  .search-button {
+    padding: 0.8rem 2rem;
+    background: #ff6b6b;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+  }
+
+  .search-button:hover {
+    background: #ff4757;
+    transform: translateY(-2px);
+  }
+
+  #searchResultsTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+  }
+
+  #searchResultsTable th,
+  #searchResultsTable td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  #searchResultsTable th {
+    background: rgba(255, 107, 107, 0.2);
+    color: #ffd93d;
+    font-weight: 600;
+  }
+
+  #searchResultsTable tr:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+</style>
+
+<script>
+// Function to load all users
+async function loadAllUsers() {
+  try {
+    const response = await fetch('/get_all_users');
+    const data = await response.json();
+    
+    if (data.success) {
+      const tableBody = document.getElementById('usersTable').getElementsByTagName('tbody')[0];
+      tableBody.innerHTML = '';
+      
+      data.users.forEach(user => {
+        const row = tableBody.insertRow();
+        row.innerHTML = `
+          <td>${user.id_number}</td>
+          <td>${user.first_name} ${user.last_name}</td>
+          <td>${user.course}</td>
+          <td>${user.year_level}</td>
+          <td>${user.email}</td>
+          <td>${user.sessions_remaining}</td>
+        `;
+      });
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('An error occurred while loading users');
+  }
+}
+
+// Function to filter table based on search input
+function filterTable() {
+  const input = document.getElementById('searchInput');
+  const filter = input.value.toUpperCase();
+  const table = document.getElementById('usersTable');
+  const tr = table.getElementsByTagName('tr');
+
+  for (let i = 1; i < tr.length; i++) {
+    const tdId = tr[i].getElementsByTagName('td')[0];
+    const tdName = tr[i].getElementsByTagName('td')[1];
+    if (tdId || tdName) {
+      const idText = tdId.textContent || tdId.innerText;
+      const nameText = tdName.textContent || tdName.innerText;
+      if (idText.toUpperCase().indexOf(filter) > -1 || nameText.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = '';
+      } else {
+        tr[i].style.display = 'none';
+      }
+    }
+  }
+}
+
+// Load all users when the page loads
+document.addEventListener('DOMContentLoaded', loadAllUsers);
+</script>
 </body>
 </html>

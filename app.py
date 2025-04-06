@@ -712,5 +712,70 @@ def update_reservation_status():
     
     return {'success': True}
 
+@app.route('/get_user_details/<id_number>', methods=['GET'])
+def get_user_details(id_number):
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT id_number, first_name, last_name, course, year_level, email, sessions_remaining
+        FROM users 
+        WHERE id_number = ?
+    ''', (id_number,))
+    
+    user = cursor.fetchone()
+    conn.close()
+    
+    if user:
+        return {
+            'success': True,
+            'user': {
+                'id_number': user[0],
+                'first_name': user[1],
+                'last_name': user[2],
+                'course': user[3],
+                'year_level': user[4],
+                'email': user[5],
+                'sessions_remaining': user[6]
+            }
+        }
+    return {'error': 'User not found'}, 404
+
+@app.route('/get_all_users', methods=['GET'])
+def get_all_users():
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT id_number, first_name, last_name, course, year_level, email, sessions_remaining
+        FROM users 
+        ORDER BY last_name, first_name
+    ''')
+    
+    users = cursor.fetchall()
+    conn.close()
+    
+    return {
+        'success': True,
+        'users': [
+            {
+                'id_number': user[0],
+                'first_name': user[1],
+                'last_name': user[2],
+                'course': user[3],
+                'year_level': user[4],
+                'email': user[5],
+                'sessions_remaining': user[6]
+            }
+            for user in users
+        ]
+    }
+
 if __name__ == '__main__':
     app.run(debug=True)

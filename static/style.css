@@ -486,6 +486,22 @@ a:hover {
     width: calc(100% - 60px); /* Adjust width to account for margin */
 }
 
+.search-container {
+    margin-left: 80px; /* Add margin to prevent navbar overlap */
+    width: calc(100% - 60px); /* Adjust width to account for margin */
+    padding: 12px;
+    margin-top: 12px;
+    display: block;
+    text-align: center;
+}
+
+.searchform {
+    width: 100%;
+    padding: 12px;
+    margin: 20px 0;
+    display: inline-block;
+}
+
 /* Success and Error Messages */
 .success {
     color: green;
@@ -579,7 +595,7 @@ a:hover {
 }
 
 .form-group input {
-    width: 95%;
+    width: 98%;
     padding: 0.8rem;
     border: 2px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
@@ -606,7 +622,7 @@ a:hover {
 }
 
 /* Table Styling */
-#activeStudentsTable, #reservationHistoryTable, #pendingReservationsTable {
+#activeStudentsTable, #reservationHistoryTable, #pendingReservationsTable, #usersTable {
     width: 100%;
     border-collapse: collapse;
     margin-top: 2rem;
@@ -620,7 +636,9 @@ a:hover {
 #reservationHistoryTable th,
 #reservationHistoryTable td,
 #pendingReservationsTable td,
-#pendingReservationsTable th {
+#pendingReservationsTable th,
+#usersTable  td,
+#usersTable th {
     padding: 1rem;
     text-align: left;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -628,7 +646,8 @@ a:hover {
 
 #activeStudentsTable th,
 #reservationHistoryTable th,
-#pendingReservationsTable th {
+#pendingReservationsTable th,
+#usersTable th {
     background: rgba(255, 107, 107, 0.2);
     color: #ffd93d;
     font-weight: 600;
@@ -644,6 +663,10 @@ a:hover {
 }
 
 #pendingReservationsTable tr:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#usersTable tr:hover {
     background: rgba(255, 255, 255, 0.1);
 }
 
