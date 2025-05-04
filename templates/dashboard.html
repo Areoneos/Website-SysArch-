@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="body">
     <header>
@@ -114,19 +115,16 @@
                     </button>
                 </li>
                 
-
-                {% if user.role == 'admin' %}
                 <li>
-                    <button class="button" onclick="window.location.href='/view-sit-in-records'">
+                    <button class="button" onclick="window.location.href='/feedback'">
                         <span class="textini">
-                            View Sit In Records 
+                            Feedback 
                         </span>
                         <span aria-hidden="true" class="hover-text">
-                            View Sit In Records 
+                            Feedback
                         </span>
                     </button>
                 </li>
-                {% endif %}
 
                 <!-- Logout Button -->
                 <li>
@@ -145,7 +143,31 @@
     </nav>
 
         <article>
+            
             <div class="dash-container">
+
+                <div class="dash-stats">
+                    <div class="stats-container">
+                        <div class="stat-card">
+                            <h3>Students Registered</h3>
+                            <p id="totalStudents">Loading...</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Currently Sit-In</h3>
+                            <p id="activeSitIns">Loading...</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Total Sit-Ins</h3>
+                            <p id="totalSitIns">Loading...</p>
+                        </div>
+                    </div>
+                    <div class="dash-chart-container">
+                        <h3>Programming Languages Used</h3>
+                        <canvas id="purposeChart"></canvas>
+                    </div>
+                </div>
+
+
                 <!-- Profile Section -->
                 <div class="profile-section">
                     <div class="profile-picture-container">
@@ -185,7 +207,7 @@
                         <li>Surfing the Internet is allowed only with the permission of the instructor. Downloading and installing of software are strictly prohibited.</li>
                         <li>Getting access to other websites not related to the course (especially pornographic and illicit sites) is strictly prohibited.</li>
                         <li>Deleting computer files and changing the set-up of the computer is a major offense.</li>
-                        <li>Observe computer time usage carefully. A fifteen-minute allowance is given for each use. Otherwise, the unit will be given to those who wish to “sit-in”.</li>
+                        <li>Observe computer time usage carefully. A fifteen-minute allowance is given for each use. Otherwise, the unit will be given to those who wish to "sit-in".</li>
                         <li>Observe proper decorum while inside the laboratory.
                         <ol type="a">
                             <li>Do not get inside the lab unless the instructor is present.</li>
@@ -218,5 +240,142 @@
             document.getElementById("year").textContent = new Date().getFullYear();
         </script>
     </footer>
+
+    <style>
+        .dash-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .stats-container {
+            display: flex;
+            justify-content: space-around;
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+            flex: 1;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card h3 {
+            color: #ffd93d;
+            margin-bottom: 0.5rem;
+            font-size: 1.2rem;
+        }
+
+        .stat-card p {
+            color: #fff;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .dash-chart-container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 10px;
+            text-align: center;
+            width: 95.5%;
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dash-chart-container h3 {
+            color: #ffd93d;
+            margin-bottom: 2rem;
+            font-size: 1.5rem;
+        }
+
+        #purposeChart {
+            width: 500px !important;
+            height: 500px !important;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 768px) {
+            .stats-container {
+                flex-direction: column;
+            }
+            
+            .dash-chart-container {
+                min-height: 400px;
+                padding: 1rem;
+            }
+            
+            #purposeChart {
+                height: 300px !important;
+            }
+        }
+    </style>
+
+    <script>
+        async function loadDashboardStats() {
+            try {
+                const response = await fetch('/get_dashboard_statistics');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update statistics
+                    document.getElementById('totalStudents').textContent = data.statistics.total_students;
+                    document.getElementById('activeSitIns').textContent = data.statistics.active_sit_ins;
+                    document.getElementById('totalSitIns').textContent = data.statistics.total_sit_ins;
+                    
+                    // Create purpose distribution chart
+                    const ctx = document.getElementById('purposeChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: data.statistics.purpose_stats.map(item => item.purpose),
+                            datasets: [{
+                                data: data.statistics.purpose_stats.map(item => item.count),
+                                backgroundColor: [
+                                    '#FF6384',
+                                    '#36A2EB',
+                                    '#FFCE56',
+                                    '#4BC0C0',
+                                    '#9966FF',
+                                    '#FF9F40'
+                                ]
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'right',
+                                    labels: {
+                                        color: '#fff'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading dashboard statistics:', error);
+            }
+        }
+
+        // Load statistics when page loads
+        document.addEventListener('DOMContentLoaded', loadDashboardStats);
+    </script>
 </body>
 </html>

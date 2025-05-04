@@ -307,11 +307,11 @@ def search():
     return render_template('search.html', user=user, username=session['user'])
 
 @app.route('/sit-in-reports')
-def sit_in_reports():
+def sit_in_records():
     user = get_current_user()
     if not user:
         return redirect(url_for('login'))
-    return render_template('sit-in-reports.html', user=user, username=session['user'])
+    return render_template('sit-in-records.html', user=user, username=session['user'])
 
 @app.route('/sit-in')
 def sit_in():
@@ -327,12 +327,7 @@ def students():
         return redirect(url_for('login'))
     return render_template('students.html', user=user, username=session['user'])
 
-@app.route('/view-sit-in-records')
-def view_sit_in_records():
-    user = get_current_user()
-    if not user:
-        return redirect(url_for('login'))
-    return render_template('view-sit-in-records.html', user=user, username=session['user'])
+
 
 @app.route('/logout')
 def logout():
@@ -403,25 +398,36 @@ def search_student():
     conn = connect_db()
     cursor = conn.cursor()
     
-    # Search by ID number or name
-    cursor.execute('''
-        SELECT id_number, first_name, last_name 
-        FROM users 
-        WHERE id_number LIKE ? OR first_name LIKE ? OR last_name LIKE ?
-    ''', (f'%{search_term}%', f'%{search_term}%', f'%{search_term}%'))
-    
-    students = cursor.fetchall()
-    conn.close()
-    
-    if students:
-        return {
-            'success': True,
-            'student': {
-                'id_number': students[0][0],
-                'name': f"{students[0][1]} {students[0][2]}"
+    try:
+        # Search by ID number or name (case insensitive)
+        cursor.execute('''
+            SELECT id_number, first_name, last_name, sessions_remaining 
+            FROM users 
+            WHERE role = 'user' AND (
+                LOWER(id_number) LIKE LOWER(?) OR 
+                LOWER(first_name) LIKE LOWER(?) OR 
+                LOWER(last_name) LIKE LOWER(?)
+            )
+        ''', (f'%{search_term}%', f'%{search_term}%', f'%{search_term}%'))
+        
+        students = cursor.fetchall()
+        conn.close()
+        
+        if students:
+            # Return the first matching student
+            return {
+                'success': True,
+                'student': {
+                    'id_number': students[0][0],
+                    'first_name': students[0][1],
+                    'last_name': students[0][2],
+                    'sessions_remaining': students[0][3]
+                }
             }
-        }
-    return {'error': 'Student not found'}, 404
+        return {'error': 'Student not found'}, 404
+    except sqlite3.Error as e:
+        conn.close()
+        return {'error': f'Database error: {str(e)}'}, 500
 
 @app.route('/get_remaining_sessions', methods=['GET'])
 def get_remaining_sessions():
@@ -529,12 +535,14 @@ def get_active_sit_ins():
     cursor = conn.cursor()
     
     cursor.execute('''
-        SELECT student_id, student_name, purpose, laboratory,
-               strftime('%Y-%m-%d', start_time) as start_date,
-               strftime('%H:%M', start_time) as start_time
-        FROM sit_in_records
-        WHERE status = 'Active'
-        ORDER BY start_time DESC
+        SELECT s.student_id, s.student_name, s.purpose, s.laboratory,
+               strftime('%Y-%m-%d', s.start_time) as start_date,
+               strftime('%H:%M', s.start_time) as start_time,
+               u.sessions_remaining
+        FROM sit_in_records s
+        JOIN users u ON s.student_id = u.id_number
+        WHERE s.status = 'Active'
+        ORDER BY s.start_time DESC
     ''')
     
     active_sit_ins = cursor.fetchall()
@@ -549,7 +557,8 @@ def get_active_sit_ins():
                 'purpose': record[2],
                 'laboratory': record[3],
                 'start_date': record[4],
-                'start_time': record[5]
+                'start_time': record[5],
+                'sessions_remaining': record[6]
             }
             for record in active_sit_ins
         ]
@@ -776,6 +785,161 @@ def get_all_users():
             for user in users
         ]
     }
+
+@app.route('/get_sit_in_records', methods=['GET'])
+def get_sit_in_records():
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    date_filter = request.args.get('date', None)
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    if date_filter:
+        cursor.execute('''
+            SELECT student_id, student_name, purpose, laboratory, 
+                   strftime('%Y-%m-%d %H:%M:%S', start_time) as start_time,
+                   strftime('%Y-%m-%d %H:%M:%S', end_time) as end_time
+            FROM sit_in_records 
+            WHERE date(start_time) = ?
+            ORDER BY start_time DESC
+        ''', (date_filter,))
+    else:
+        cursor.execute('''
+            SELECT student_id, student_name, purpose, laboratory, 
+                   strftime('%Y-%m-%d %H:%M:%S', start_time) as start_time,
+                   strftime('%Y-%m-%d %H:%M:%S', end_time) as end_time
+            FROM sit_in_records 
+            ORDER BY start_time DESC
+        ''')
+    
+    records = cursor.fetchall()
+    conn.close()
+    
+    return {
+        'success': True,
+        'records': [
+            {
+                'student_id': record[0],
+                'student_name': record[1],
+                'purpose': record[2],
+                'laboratory': record[3],
+                'start_time': record[4],
+                'end_time': record[5]
+            }
+            for record in records
+        ]
+    }
+
+@app.route('/get_sit_in_statistics', methods=['GET'])
+def get_sit_in_statistics():
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    date_filter = request.args.get('date', None)
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    # Base query for filtering by date
+    date_condition = "WHERE date(start_time) = ?" if date_filter else ""
+    params = (date_filter,) if date_filter else ()
+    
+    # Get purpose statistics
+    cursor.execute(f'''
+        SELECT purpose, COUNT(*) as count
+        FROM sit_in_records
+        {date_condition}
+        GROUP BY purpose
+        ORDER BY count DESC
+    ''', params)
+    purpose_stats = [{'purpose': row[0], 'count': row[1]} for row in cursor.fetchall()]
+    
+    # Get laboratory statistics
+    cursor.execute(f'''
+        SELECT laboratory, COUNT(*) as count
+        FROM sit_in_records
+        {date_condition}
+        GROUP BY laboratory
+        ORDER BY count DESC
+    ''', params)
+    laboratory_stats = [{'laboratory': row[0], 'count': row[1]} for row in cursor.fetchall()]
+    
+    conn.close()
+    
+    return {
+        'success': True,
+        'purpose_stats': purpose_stats,
+        'laboratory_stats': laboratory_stats
+    }
+
+@app.route('/get_dashboard_statistics', methods=['GET'])
+def get_dashboard_statistics():
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    try:
+        # Get total registered students
+        cursor.execute('SELECT COUNT(*) FROM users WHERE role = "user"')
+        total_students = cursor.fetchone()[0]
+        
+        # Get currently active sit-ins
+        cursor.execute('SELECT COUNT(*) FROM sit_in_records WHERE status = "Active"')
+        active_sit_ins = cursor.fetchone()[0]
+        
+        # Get total sit-ins
+        cursor.execute('SELECT COUNT(*) FROM sit_in_records')
+        total_sit_ins = cursor.fetchone()[0]
+        
+        # Get purpose distribution
+        cursor.execute('''
+            SELECT purpose, COUNT(*) as count 
+            FROM sit_in_records 
+            GROUP BY purpose 
+            ORDER BY count DESC
+        ''')
+        purpose_stats = [{'purpose': row[0], 'count': row[1]} for row in cursor.fetchall()]
+        
+        return {
+            'success': True,
+            'statistics': {
+                'total_students': total_students,
+                'active_sit_ins': active_sit_ins,
+                'total_sit_ins': total_sit_ins,
+                'purpose_stats': purpose_stats
+            }
+        }
+    except sqlite3.Error as e:
+        return {'error': f'Database error: {str(e)}'}, 500
+    finally:
+        conn.close()
+
+@app.route('/reset_all_sessions', methods=['POST'])
+def reset_all_sessions():
+    if not get_current_user() or get_current_user()['role'] != 'admin':
+        return {'error': 'Not authorized'}, 403
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    try:
+        # Reset all users' sessions to 30
+        cursor.execute('''
+            UPDATE users 
+            SET sessions_remaining = 30
+            WHERE role = 'user'
+        ''')
+        conn.commit()
+        return {'success': True, 'message': 'All sessions have been reset to 30'}
+    except sqlite3.Error as e:
+        conn.rollback()
+        return {'error': f'Database error: {str(e)}'}, 500
+    finally:
+        conn.close()
 
 if __name__ == '__main__':
     app.run(debug=True)

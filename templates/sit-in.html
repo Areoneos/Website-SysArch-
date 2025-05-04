@@ -115,18 +115,16 @@
                 </li>
                 {% endif %}
 
-                {% if user.role == 'admin' %}
                 <li>
-                    <button class="button" onclick="window.location.href='/view-sit-in-records'">
+                    <button class="button" onclick="window.location.href='/feedback'">
                         <span class="textini">
-                            View Sit In Records 
+                            Feedback 
                         </span>
                         <span aria-hidden="true" class="hover-text">
-                            View Sit In Records 
+                            Feedback
                         </span>
                     </button>
                 </li>
-                {% endif %}
 
                 <!-- Logout Button -->
                 <li>
@@ -156,6 +154,11 @@
             <button class="button" id="pendingReservationsButton">
                 <span class="textini">Pending Reservations</span>
                 <span aria-hidden="true" class="hover-text">Pending Reservations</span>
+            </button>
+
+            <button class="button" id="resetSessionsButton" style="background-color: #ff6b6b;">
+                <span class="textini">Reset Sit-in Sessions</span>
+                <span aria-hidden="true" class="hover-text">Reset Sit-in Sessions</span>
             </button>
             {% endif %}
 
@@ -251,6 +254,7 @@
                         <th>Laboratory</th>
                         <th>Date</th>
                         <th>Time</th>
+                        <th>Remaining Sessions</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -339,20 +343,20 @@
     }
 
     searchButton.onclick = async function() {
-        const searchTerm = document.getElementById("searchStudent").value;
+        const searchTerm = document.getElementById("searchStudent").value.trim();
         
-        if (!searchTerm.trim()) {
+        if (!searchTerm) {
             alert("Please enter a student ID or name");
             return;
         }
 
         try {
+            const formData = new FormData();
+            formData.append('search_term', searchTerm);
+
             const response = await fetch('/search_student', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `search_term=${encodeURIComponent(searchTerm)}`
+                body: formData
             });
             
             const data = await response.json();
@@ -366,11 +370,7 @@
                 }
 
                 // Get remaining sessions
-                const sessions = await getStudentRemainingSessions(data.student.id_number);
-                if (sessions === null) {
-                    alert("Error fetching remaining sessions");
-                    return;
-                }
+                const sessions = data.student.sessions_remaining;
                 if (sessions <= 0) {
                     alert("This student has no remaining sessions!");
                     return;
@@ -378,11 +378,11 @@
 
                 currentStudentId = data.student.id_number;
                 studentId.textContent = data.student.id_number;
-                studentName.textContent = data.student.name;
+                studentName.textContent = `${data.student.first_name} ${data.student.last_name}`;
                 remainingSessions.textContent = sessions;
                 studentDetails.classList.remove("hidden");
             } else {
-                alert("Student not found!");
+                alert(data.error || "Student not found!");
             }
         } catch (error) {
             console.error('Error:', error);
@@ -482,6 +482,7 @@
                         <td>${student.laboratory}</td>
                         <td>${formattedDate}</td>
                         <td>${formattedTime}</td>
+                        <td>${student.sessions_remaining}</td>
                         <td>Active</td>
                         <td><button class="endButton" data-student-id="${student.student_id}">End</button></td>
                     `;
@@ -528,6 +529,34 @@
     {% if user.role == 'admin' %}
     const pendingReservationsModal = document.getElementById("pendingReservationsModal");
     const pendingReservationsButton = document.getElementById("pendingReservationsButton");
+    const resetSessionsButton = document.getElementById("resetSessionsButton");
+
+    // Reset Sessions functionality
+    resetSessionsButton.onclick = async function() {
+        if (!confirm('Are you sure you want to reset all users\' sessions back to 30? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/reset_all_sessions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alert(data.message);
+            } else {
+                alert(data.error || 'Error resetting sessions');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error resetting sessions');
+        }
+    };
 
     // Load pending reservations
     async function loadPendingReservations() {

@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Sit-in Monitoring System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body class="body">
+    <header>
+        <h2 class="titleh1">
+            <span class="button__icon">
+                CCS SIT-IN MONITORING SYSTEM <ion-icon name="bookmarks-outline"></ion-icon>
+            </span>
+        </h2>
+    </header>
+  
+    <section class="grid-container">
+        <nav>
+            <ul>
+              <li>
+                  <button class="button" onclick="window.location.href='/dashboard'">
+                      <span class="textini">
+                        Dashboard
+                      </span>
+                      <span aria-hidden="true" class="hover-text">
+                        Dashboard
+                      </span>
+                    </button>
+              </li>
+                {% if user.role == 'admin' %}
+                <li>
+                <button class="button" onclick="window.location.href='/search'">
+                    <span class="textini">
+                        Search 
+                    </span>
+                    <span aria-hidden="true" class="hover-text">
+                        Search
+                    </span>
+                </button>
+                </li>
+                <li>
+                    <button class="button" onclick="window.location.href='/students'">
+                        <span class="textini">
+                            Students
+                        </span>
+                        <span aria-hidden="true" class="hover-text">
+                            Students
+                        </span>
+                    </button>
+                </li>
+                {% endif %}
+                <li>
+                    <button class="button" onclick="window.location.href='/edit'">
+                        <span class="textini">
+                            Edit 
+                        </span>
+                        <span aria-hidden="true" class="hover-text">
+                            Edit
+                        </span>
+                    </button>
+                </li>
+  
+                {% if user.role == 'admin' %}
+                <li>
+                    <button class="button" onclick="window.location.href='/announcement'">
+                        <span class="textini">
+                            Announcement 
+                        </span>
+                        <span aria-hidden="true" class="hover-text">
+                            Announcement
+                        </span>
+                    </button>
+                </li>
+                {% endif %}
+
+                {% if user.role == 'admin' %}
+                <li>
+                    <button class="button" onclick="window.location.href='/sit-in'">
+                        <span class="textini">
+                            Sit-In
+                        </span>
+                        <span aria-hidden="true" class="hover-text">
+                            Sit-In
+                        </span>
+                    </button>
+                </li>
+                {% endif %}
+
+                {% if user.role == 'admin' %}
+                <li>
+                    <button class="button" onclick="window.location.href='/sit-in-reports'">
+                        <span class="textini">
+                            Sit-In Reports
+                        </span>
+                        <span aria-hidden="true" class="hover-text">
+                            Sit-In Reports
+                        </span> 
+                    </button>
+                </li>
+                {% endif %}
+  
+                {% if user.role == 'admin' %}
+                <li>
+                    <button class="button" onclick="window.location.href='/reservations'">
+                        <span class="textini">
+                            Reservations 
+                        </span>
+                        <span aria-hidden="true" class="hover-text">
+                            Reservations
+                        </span>
+                    </button>
+                </li>
+                {% endif %}
+
+                <li>
+                    <button class="button" onclick="window.location.href='/feedback'">
+                        <span class="textini">
+                            Feedback 
+                        </span>
+                        <span aria-hidden="true" class="hover-text">
+                            Feedback
+                        </span>
+                    </button>
+                </li>
+
+                <!-- Logout Button -->
+                <li>
+                    <button class="button" style="background-color: red; color: white;" onclick="window.location.href='/logout'">
+                        <span class="textini">
+                            Logout 
+                        </span>
+                        <span aria-hidden="true" class="hover-text">
+                            Logout
+                        </span>
+                    </button>
+                </li>
+            </ul>
+        </nav>
+  
+    </nav>
+  <article>
+    <div class="sit-in-records-container">
+      <h2>Sit-In Records</h2>
+      
+      <!-- Charts Container -->
+      <div class="charts-container">
+        <div class="purpose-chart">
+          <h3>Purpose Distribution</h3>
+          <canvas id="purposeChart"></canvas>
+        </div>
+        <div class="laboratory-chart">
+          <h3>Laboratory Distribution</h3>
+          <canvas id="laboratoryChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Date Filter -->
+      <div class="filter-container">
+        <div class="form-group">
+          <label for="dateFilter">Filter by Date:</label>
+          <input type="date" id="dateFilter" onchange="filterRecords()">
+          <button onclick="clearFilter()">Clear Filter</button>
+          <button onclick="exportToPDF()">Export to PDF</button>
+          <button onclick="exportToExcel()">Export to Excel</button>
+          <button onclick="exportToCSV()">Export to CSV</button>
+        </div>
+      </div>
+      <!-- Records Table -->
+      <div class="table-container">
+        <table id="sitInRecordsTable">
+          <thead>
+            <tr>
+              <th>ID Number</th>
+              <th>Name</th>
+              <th>Purpose</th>
+              <th>Laboratory</th>
+              <th>Date</th>
+              <th>Login Time</th>
+              <th>Logout Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Records will be populated here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </article>
+</section>
+<footer>
+  <p>copyright © <span id="year"></span> all rights reserved</p>
+  <script>
+      document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+</footer>
+
+<style>
+  .sit-in-records-container {
+    
+    margin: 2rem auto;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-left: 60px; /* Add margin to prevent navbar overlap */
+    margin-right: 20px;
+    width: calc(97% - 60px); /* Adjust width to account for margin */
+  }
+
+  .sit-in-records-container h2 {
+    color: #ffd93d;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+
+  .filter-container {
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .filter-container .form-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .filter-container label {
+    color: #ffd93d;
+  }
+
+  .filter-container input[type="date"] {
+    padding: 0.5rem;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+  }
+
+  .filter-container button {
+    padding: 0.5rem 1rem;
+    background: #ff6b6b;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 0 0.5rem;
+  }
+
+  .filter-container button:hover {
+    background: #ff4757;
+    transform: translateY(-2px);
+  }
+
+  .filter-container button:last-child {
+    margin-right: 0;
+  }
+
+  .table-container {
+    overflow-x: auto;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 1rem;
+  }
+
+  #sitInRecordsTable {
+    
+    width: 98%;
+    border-collapse: collapse;
+    
+  }
+
+  #sitInRecordsTable th,
+  #sitInRecordsTable td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  #sitInRecordsTable th {
+    background: rgba(255, 107, 107, 0.2);
+    color: #ffd93d;
+    font-weight: 600;
+  }
+
+  #sitInRecordsTable tr:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .charts-container {
+    width: 800px;
+    height: 600px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .chart-wrapper {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1rem;
+    border-radius: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .purpose-chart {
+    grid-column-start: 8;
+    grid-row-start: 2;
+    }
+
+  .laboratory-chart {
+    grid-column-start: 18;
+    grid-row-start: 2;
+    }
+
+  .purpose-chart, .laboratory-chart h3 {
+    color: #ffd93d;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+  .purpose-chart, .laboratory-chart canvas {
+    width: 500px !important;
+    height: 500px !important;
+  }
+</style>
+
+<script>
+  // Function to load sit-in records
+  async function loadSitInRecords(date = null) {
+    try {
+      let url = '/get_sit_in_records';
+      if (date) {
+        url += `?date=${date}`;
+      }
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.success) {
+        const tableBody = document.getElementById('sitInRecordsTable').getElementsByTagName('tbody')[0];
+        tableBody.innerHTML = '';
+        
+        data.records.forEach(record => {
+          const row = tableBody.insertRow();
+          
+          // Format date and times
+          const startDate = new Date(record.start_time);
+          const endDate = record.end_time ? new Date(record.end_time) : null;
+          
+          const formattedDate = startDate.toLocaleDateString('en-US', {
+            month: '2-digit',
+            day: '2-digit',
+            year: 'numeric'
+          });
+          
+          const formattedStartTime = startDate.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          });
+          
+          const formattedEndTime = endDate ? endDate.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          }) : 'N/A';
+          
+          row.innerHTML = `
+            <td>${record.student_id}</td>
+            <td>${record.student_name}</td>
+            <td>${record.purpose}</td>
+            <td>${record.laboratory}</td>
+            <td>${formattedDate}</td>
+            <td>${formattedStartTime}</td>
+            <td>${formattedEndTime}</td>
+          `;
+        });
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('An error occurred while loading records');
+    }
+  }
+
+  // Function to load statistics for charts
+  async function loadStatistics(date = null) {
+    try {
+      let url = '/get_sit_in_statistics';
+      if (date) {
+        url += `?date=${date}`;
+      }
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.success) {
+        // Create purpose chart
+        const purposeCtx = document.getElementById('purposeChart').getContext('2d');
+        new Chart(purposeCtx, {
+          type: 'pie',
+          data: {
+            labels: data.purpose_stats.map(item => item.purpose),
+            datasets: [{
+              data: data.purpose_stats.map(item => item.count),
+              backgroundColor: [
+                '#FF6384',
+                '#36A2EB',
+                '#FFCE56',
+                '#4BC0C0',
+                '#9966FF',
+                '#FF9F40'
+              ]
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                position: 'right',
+                labels: {
+                  color: '#fff'
+                }
+              }
+            }
+          }
+        });
+
+        // Create laboratory chart
+        const labCtx = document.getElementById('laboratoryChart').getContext('2d');
+        new Chart(labCtx, {
+          type: 'pie',
+          data: {
+            labels: data.laboratory_stats.map(item => item.laboratory),
+            datasets: [{
+              data: data.laboratory_stats.map(item => item.count),
+              backgroundColor: [
+                '#FF6384',
+                '#36A2EB',
+                '#FFCE56',
+                '#4BC0C0',
+                '#9966FF',
+                '#FF9F40'
+              ]
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                position: 'right',
+                labels: {
+                  color: '#fff'
+                }
+              }
+            }
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  }
+
+  // Function to filter records by date
+  function filterRecords() {
+    const dateFilter = document.getElementById('dateFilter').value;
+    loadSitInRecords(dateFilter);
+    loadStatistics(dateFilter);
+  }
+
+  // Function to clear date filter
+  function clearFilter() {
+    document.getElementById('dateFilter').value = '';
+    loadSitInRecords();
+    loadStatistics();
+  }
+
+  // Load records and statistics when page loads
+  document.addEventListener('DOMContentLoaded', () => {
+    loadSitInRecords();
+    loadStatistics();
+  });
+
+  // Add these new functions for export functionality
+  function exportToPDF() {
+    try {
+      const table = document.getElementById('sitInRecordsTable');
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      // Add title
+      doc.setFontSize(16);
+      doc.text('Sit-In Records', 14, 15);
+      
+      // Add date if filter is applied
+      const dateFilter = document.getElementById('dateFilter').value;
+      if (dateFilter) {
+        doc.setFontSize(12);
+        doc.text(`Date: ${dateFilter}`, 14, 25);
+      }
+      
+      // Get table data
+      const headers = [];
+      const data = [];
+      
+      // Get headers
+      table.querySelectorAll('th').forEach(th => {
+        headers.push(th.textContent.trim());
+      });
+      
+      // Get data rows
+      table.querySelectorAll('tbody tr').forEach(tr => {
+        const row = [];
+        tr.querySelectorAll('td').forEach(td => {
+          row.push(td.textContent.trim());
+        });
+        data.push(row);
+      });
+      
+      // Add table using autoTable
+      doc.autoTable({
+        head: [headers],
+        body: data,
+        startY: dateFilter ? 30 : 25,
+        theme: 'grid',
+        headStyles: { fillColor: [255, 107, 107] },
+        styles: { fontSize: 8 }
+      });
+      
+      // Save the PDF
+      doc.save('sit-in-records.pdf');
+    } catch (error) {
+      console.error('Error exporting to PDF:', error);
+      alert('Error exporting to PDF. Please try again.');
+    }
+  }
+
+  function exportToExcel() {
+    try {
+      const table = document.getElementById('sitInRecordsTable');
+      const wb = XLSX.utils.book_new();
+      
+      // Get table data
+      const headers = [];
+      const data = [];
+      
+      // Get headers
+      table.querySelectorAll('th').forEach(th => {
+        headers.push(th.textContent.trim());
+      });
+      
+      // Get data rows
+      table.querySelectorAll('tbody tr').forEach(tr => {
+        const row = [];
+        tr.querySelectorAll('td').forEach(td => {
+          row.push(td.textContent.trim());
+        });
+        data.push(row);
+      });
+      
+      // Create worksheet with headers and data
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+      
+      // Add title and date if filter is applied
+      const dateFilter = document.getElementById('dateFilter').value;
+      const title = dateFilter ? `Sit-In Records (${dateFilter})` : 'Sit-In Records';
+      XLSX.utils.sheet_add_aoa(ws, [[title]], { origin: 'A1' });
+      
+      // Add the worksheet to the workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Sit-In Records');
+      
+      // Save the Excel file
+      XLSX.writeFile(wb, 'sit-in-records.xlsx');
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      alert('Error exporting to Excel. Please try again.');
+    }
+  }
+
+  function exportToCSV() {
+    try {
+      const table = document.getElementById('sitInRecordsTable');
+      const rows = table.querySelectorAll('tr');
+      let csv = [];
+      
+      // Add title and date if filter is applied
+      const dateFilter = document.getElementById('dateFilter').value;
+      const title = dateFilter ? `Sit-In Records (${dateFilter})` : 'Sit-In Records';
+      csv.push(title);
+      csv.push(''); // Empty line
+      
+      // Add headers
+      const headers = [];
+      table.querySelectorAll('th').forEach(th => headers.push(th.textContent.trim()));
+      csv.push(headers.join(','));
+      
+      // Add data rows
+      table.querySelectorAll('tbody tr').forEach(tr => {
+        const row = [];
+        tr.querySelectorAll('td').forEach(td => {
+          // Handle commas in data by wrapping in quotes
+          const cellData = td.textContent.trim();
+          row.push(cellData.includes(',') ? `"${cellData}"` : cellData);
+        });
+        csv.push(row.join(','));
+      });
+      
+      // Create and download CSV file
+      const csvContent = csv.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'sit-in-records.csv';
+      link.click();
+      
+      // Clean up
+      URL.revokeObjectURL(link.href);
+    } catch (error) {
+      console.error('Error exporting to CSV:', error);
+      alert('Error exporting to CSV. Please try again.');
+    }
+  }
+</script>
+
+<script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+</body>
+</html>
