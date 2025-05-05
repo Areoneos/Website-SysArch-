@@ -92,7 +92,7 @@
                 </li>
                 {% endif %}
   
-                {% if user.role == 'admin' %}
+                {% if user.role == 'user' %}
                 <li>
                     <button class="button" onclick="window.location.href='/reservations'">
                         <span class="textini">
@@ -104,17 +104,9 @@
                     </button>
                 </li>
                 {% endif %}
+                
 
-                <li>
-                    <button class="button" onclick="window.location.href='/feedback'">
-                        <span class="textini">
-                            Feedback 
-                        </span>
-                        <span aria-hidden="true" class="hover-text">
-                            Feedback
-                        </span>
-                    </button>
-                </li>
+                
 
                 <!-- Logout Button -->
                 <li>
@@ -182,8 +174,8 @@
 
           <!-- Action Buttons -->
           <div class="form-group">
-            <button id="cancelReservationButton">Cancel</button>
-            <button id="submitReservationButton">Submit Reservation</button>
+            <button id="cancelReservationButton" class="action-button">Cancel</button>
+            <button id="submitReservationButton" class="action-button">Submit Reservation</button>
           </div>
         </div>
       </div>
@@ -199,12 +191,29 @@
             <th>Time</th>
             <th>Status</th>
             <th>Created At</th>
+            <th>Feedback</th>
           </tr>
         </thead>
         <tbody>
           <!-- Rows will be dynamically populated -->
         </tbody>
       </table>
+
+      <!-- Feedback Modal -->
+      <div id="feedbackModal" class="modal">
+        <div class="modal-content">
+          <span class="close-feedback">&times;</span>
+          <h2>Submit Feedback</h2>
+          <div class="form-group">
+            <label for="feedbackText">Your Feedback:</label>
+            <textarea id="feedbackText" rows="4" required></textarea>
+          </div>
+          <div class="form-group">
+            <button id="cancelFeedbackButton" class="action-button">Cancel</button>
+            <button id="submitFeedbackButton" class="action-button">Submit Feedback</button>
+          </div>
+        </div>
+      </div>
     </div>
   </article>
 </section>
@@ -255,7 +264,12 @@
                         <td>${reservation.reservation_date}</td>
                         <td>${reservation.reservation_time}</td>
                         <td>${reservation.status}</td>
-                        <td>${new Date(reservation.created_at).toLocaleString()}</td>
+                        <td>${new Date(reservation.created_at + 'Z').toLocaleString()}</td>
+                        <td>
+                            <button class="feedback-button" onclick="openFeedbackModal()">
+                                Feedback
+                            </button>
+                        </td>
                     `;
                 });
             }
@@ -266,23 +280,27 @@
 
     // Open modal when Reserve button is clicked
     reserveButton.onclick = function() {
-        reservationModal.style.display = "block";
+        reservationModal.classList.add('show');
+        document.getElementById('reservationModal').querySelector('.modal-content').classList.add('show');
     };
 
     // Close modal when close button (x) is clicked
     closeModal.onclick = function() {
-        reservationModal.style.display = "none";
+        reservationModal.classList.remove('show');
+        document.getElementById('reservationModal').querySelector('.modal-content').classList.remove('show');
     };
 
     // Close modal when Cancel button is clicked
     cancelReservationButton.onclick = function() {
-        reservationModal.style.display = "none";
+        reservationModal.classList.remove('show');
+        document.getElementById('reservationModal').querySelector('.modal-content').classList.remove('show');
     };
 
     // Close modal when clicking outside the modal
     window.onclick = function(event) {
         if (event.target === reservationModal) {
-            reservationModal.style.display = "none";
+            reservationModal.classList.remove('show');
+            document.getElementById('reservationModal').querySelector('.modal-content').classList.remove('show');
         }
     };
 
@@ -319,7 +337,8 @@
                 // Refresh remaining sessions
                 loadRemainingSessions();
                 // Close modal
-                reservationModal.style.display = "none";
+                reservationModal.classList.remove('show');
+                document.getElementById('reservationModal').querySelector('.modal-content').classList.remove('show');
                 // Reset form
                 document.getElementById("purpose").value = "C Programming";
                 document.getElementById("laboratory").value = "524";
@@ -366,6 +385,66 @@
         loadRemainingSessions();
         loadReservationHistory();
     });
+
+    // Feedback Modal functionality
+    const feedbackModal = document.getElementById("feedbackModal");
+    const closeFeedbackModal = document.getElementsByClassName("close-feedback")[0];
+    const cancelFeedbackButton = document.getElementById("cancelFeedbackButton");
+
+    function openFeedbackModal() {
+        feedbackModal.classList.add('show');
+        document.getElementById('feedbackModal').querySelector('.modal-content').classList.add('show');
+    }
+
+    closeFeedbackModal.onclick = function() {
+        feedbackModal.classList.remove('show');
+        document.getElementById('feedbackModal').querySelector('.modal-content').classList.remove('show');
+    };
+
+    cancelFeedbackButton.onclick = function() {
+        feedbackModal.classList.remove('show');
+        document.getElementById('feedbackModal').querySelector('.modal-content').classList.remove('show');
+    };
+
+    window.onclick = function(event) {
+        if (event.target === feedbackModal) {
+            feedbackModal.classList.remove('show');
+            document.getElementById('feedbackModal').querySelector('.modal-content').classList.remove('show');
+        }
+    };
+
+    document.getElementById("submitFeedbackButton").onclick = async function() {
+        const feedback = document.getElementById("feedbackText").value;
+        
+        if (!feedback.trim()) {
+            alert("Please enter your feedback");
+            return;
+        }
+
+        try {
+            const response = await fetch('/submit_feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `feedback=${encodeURIComponent(feedback)}`
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alert("Feedback submitted successfully!");
+                feedbackModal.classList.remove('show');
+                document.getElementById('feedbackModal').querySelector('.modal-content').classList.remove('show');
+                document.getElementById("feedbackText").value = "";
+            } else {
+                alert(data.error || "Error submitting feedback");
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert("Error submitting feedback");
+        }
+    };
 </script>
 
 <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>

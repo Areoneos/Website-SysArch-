@@ -353,6 +353,7 @@ def init_db():
             status TEXT NOT NULL,
             start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             end_time TIMESTAMP,
+            feedback TEXT,
             FOREIGN KEY (student_id) REFERENCES users (id_number)
         )
     ''')
@@ -486,7 +487,7 @@ def start_sit_in():
         # Create sit-in record with current timestamp in local time
         cursor.execute('''
             INSERT INTO sit_in_records (student_id, student_name, purpose, laboratory, status, start_time)
-            VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%d %H:%M:%S', 'now', 'localtime'))
+            VALUES (?, ?, ?, ?, ?, datetime('now', 'localtime'))
         ''', (student_id, student_name, purpose, laboratory, 'Active'))
         
         # Decrease remaining sessions
@@ -517,7 +518,7 @@ def end_sit_in():
     
     cursor.execute('''
         UPDATE sit_in_records 
-        SET status = 'Inactive', end_time = CURRENT_TIMESTAMP
+        SET status = 'Inactive', end_time = datetime('now', 'localtime')
         WHERE student_id = ? AND status = 'Active'
     ''', (student_id,))
     
@@ -800,7 +801,8 @@ def get_sit_in_records():
         cursor.execute('''
             SELECT student_id, student_name, purpose, laboratory, 
                    strftime('%Y-%m-%d %H:%M:%S', start_time) as start_time,
-                   strftime('%Y-%m-%d %H:%M:%S', end_time) as end_time
+                   strftime('%Y-%m-%d %H:%M:%S', end_time) as end_time,
+                   feedback
             FROM sit_in_records 
             WHERE date(start_time) = ?
             ORDER BY start_time DESC
@@ -809,7 +811,8 @@ def get_sit_in_records():
         cursor.execute('''
             SELECT student_id, student_name, purpose, laboratory, 
                    strftime('%Y-%m-%d %H:%M:%S', start_time) as start_time,
-                   strftime('%Y-%m-%d %H:%M:%S', end_time) as end_time
+                   strftime('%Y-%m-%d %H:%M:%S', end_time) as end_time,
+                   feedback
             FROM sit_in_records 
             ORDER BY start_time DESC
         ''')
@@ -826,7 +829,8 @@ def get_sit_in_records():
                 'purpose': record[2],
                 'laboratory': record[3],
                 'start_time': record[4],
-                'end_time': record[5]
+                'end_time': record[5],
+                'feedback': record[6]
             }
             for record in records
         ]
@@ -935,6 +939,47 @@ def reset_all_sessions():
         ''')
         conn.commit()
         return {'success': True, 'message': 'All sessions have been reset to 30'}
+    except sqlite3.Error as e:
+        conn.rollback()
+        return {'error': f'Database error: {str(e)}'}, 500
+    finally:
+        conn.close()
+
+@app.route('/submit_feedback', methods=['POST'])
+def submit_feedback():
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    feedback = request.form.get('feedback')
+    student_id = get_current_user()['id_number']
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    try:
+        # First, find the most recent inactive sit-in record for this student
+        cursor.execute('''
+            SELECT id FROM sit_in_records 
+            WHERE student_id = ? AND status = 'Inactive'
+            ORDER BY end_time DESC
+            LIMIT 1
+        ''', (student_id,))
+        
+        record = cursor.fetchone()
+        
+        if record:
+            # Update the found record with feedback
+            cursor.execute('''
+                UPDATE sit_in_records 
+                SET feedback = ?
+                WHERE id = ?
+            ''', (feedback, record[0]))
+            
+            conn.commit()
+            return {'success': True}
+        else:
+            return {'error': 'No completed sit-in session found'}, 404
+            
     except sqlite3.Error as e:
         conn.rollback()
         return {'error': f'Database error: {str(e)}'}, 500

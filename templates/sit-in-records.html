@@ -96,7 +96,7 @@
                 </li>
                 {% endif %}
   
-                {% if user.role == 'admin' %}
+                {% if user.role == 'user' %}
                 <li>
                     <button class="button" onclick="window.location.href='/reservations'">
                         <span class="textini">
@@ -109,16 +109,7 @@
                 </li>
                 {% endif %}
 
-                <li>
-                    <button class="button" onclick="window.location.href='/feedback'">
-                        <span class="textini">
-                            Feedback 
-                        </span>
-                        <span aria-hidden="true" class="hover-text">
-                            Feedback
-                        </span>
-                    </button>
-                </li>
+                
 
                 <!-- Logout Button -->
                 <li>
@@ -156,10 +147,10 @@
         <div class="form-group">
           <label for="dateFilter">Filter by Date:</label>
           <input type="date" id="dateFilter" onchange="filterRecords()">
-          <button onclick="clearFilter()">Clear Filter</button>
-          <button onclick="exportToPDF()">Export to PDF</button>
-          <button onclick="exportToExcel()">Export to Excel</button>
-          <button onclick="exportToCSV()">Export to CSV</button>
+          <button class="action-button" onclick="clearFilter()">Clear Filter</button>
+          <button class="action-button" onclick="exportToPDF()">Export to PDF</button>
+          <button class="action-button" onclick="exportToExcel()">Export to Excel</button>
+          <button class="action-button" onclick="exportToCSV()">Export to CSV</button>
         </div>
       </div>
       <!-- Records Table -->
@@ -174,12 +165,24 @@
               <th>Date</th>
               <th>Login Time</th>
               <th>Logout Time</th>
+              <th>Feedback</th>
             </tr>
           </thead>
           <tbody>
             <!-- Records will be populated here -->
           </tbody>
         </table>
+      </div>
+
+      <!-- View Feedback Modal -->
+      <div id="viewFeedbackModal" class="modal">
+        <div class="modal-content">
+          <span class="close-view-feedback">&times;</span>
+          <h2>Student Feedback</h2>
+          <div class="feedback-content">
+            <p id="feedbackTextDisplay"></p>
+          </div>
+        </div>
       </div>
     </div>
   </article>
@@ -358,13 +361,15 @@
           const formattedStartTime = startDate.toLocaleTimeString('en-US', {
             hour: '2-digit',
             minute: '2-digit',
-            hour12: true
+            hour12: true,
+            timeZone: 'Asia/Manila'
           });
           
           const formattedEndTime = endDate ? endDate.toLocaleTimeString('en-US', {
             hour: '2-digit',
             minute: '2-digit',
-            hour12: true
+            hour12: true,
+            timeZone: 'Asia/Manila'
           }) : 'N/A';
           
           row.innerHTML = `
@@ -375,6 +380,13 @@
             <td>${formattedDate}</td>
             <td>${formattedStartTime}</td>
             <td>${formattedEndTime}</td>
+            <td>
+                ${record.feedback ? 
+                    `<button class="view-feedback-button" onclick="openViewFeedbackModal('${record.feedback}')">
+                        View Feedback
+                    </button>` : 
+                    'No feedback'}
+            </td>
           `;
         });
       }
@@ -622,6 +634,28 @@
       alert('Error exporting to CSV. Please try again.');
     }
   }
+
+  // View Feedback Modal functionality
+  const viewFeedbackModal = document.getElementById("viewFeedbackModal");
+  const closeViewFeedbackModal = document.getElementsByClassName("close-view-feedback")[0];
+
+  function openViewFeedbackModal(feedback) {
+    document.getElementById("feedbackTextDisplay").textContent = feedback;
+    viewFeedbackModal.classList.add('show');
+    document.getElementById('viewFeedbackModal').querySelector('.modal-content').classList.add('show');
+  }
+
+  closeViewFeedbackModal.onclick = function() {
+    viewFeedbackModal.classList.remove('show');
+    document.getElementById('viewFeedbackModal').querySelector('.modal-content').classList.remove('show');
+  };
+
+  window.onclick = function(event) {
+    if (event.target === viewFeedbackModal) {
+      viewFeedbackModal.classList.remove('show');
+      document.getElementById('viewFeedbackModal').querySelector('.modal-content').classList.remove('show');
+    }
+  };
 </script>
 
 <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
