@@ -105,7 +105,16 @@
                 </li>
                 {% endif %}
 
-                
+                <li>
+                    <button class="button" onclick="window.location.href='/lab-resources'">
+                        <span class="textini">
+                            Lab Resources
+                        </span>
+                        <span aria-hidden="true" class="hover-text">
+                            Lab Resources
+                        </span>
+                    </button>
+                </li>
 
                 <!-- Logout Button -->
                 <li>
@@ -246,6 +255,22 @@
             </table>
         </div>
     </article>
+
+    <!-- Points Modal -->
+    <div id="pointsModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closePointsModal()">&times;</button>
+            <h2 style="color: #ffd93d; margin-bottom: 1.5rem;">Add Points</h2>
+            <div class="form-group">
+                <label>Select Points to Add:</label>
+                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                    <button class="action-button" onclick="addPoints(1)">1 Point</button>
+                    <button class="action-button" onclick="addPoints(2)">2 Points</button>
+                    <button class="action-button" onclick="addPoints(3)">3 Points</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </section>
 <footer>
   <p>copyright © <span id="year"></span> all rights reserved</p>
@@ -260,26 +285,43 @@
     const sitInButton = document.getElementById("sitInButton");
     const closeModal = document.getElementsByClassName("close")[0];
     const cancelButton = document.getElementById("cancelButton");
+    const pointsModal = document.getElementById('pointsModal');
+    let currentStudentId = null;
 
     // Open modal when Sit-In button is clicked
     sitInButton.onclick = function() {
-        sitInModal.style.display = "block";
+        sitInModal.style.display = "flex";
+        sitInModal.classList.add('show');
+        const modalContent = sitInModal.querySelector('.modal-content');
+        modalContent.classList.add('show');
     };
 
     // Close modal when close button (x) is clicked
     closeModal.onclick = function() {
         sitInModal.style.display = "none";
+        sitInModal.classList.remove('show');
+        const modalContent = sitInModal.querySelector('.modal-content');
+        modalContent.classList.remove('show');
     };
 
     // Close modal when Cancel button is clicked
     cancelButton.onclick = function() {
         sitInModal.style.display = "none";
+        sitInModal.classList.remove('show');
+        const modalContent = sitInModal.querySelector('.modal-content');
+        modalContent.classList.remove('show');
     };
 
     // Close modal when clicking outside the modal
     window.onclick = function(event) {
         if (event.target === sitInModal) {
             sitInModal.style.display = "none";
+            sitInModal.classList.remove('show');
+            const modalContent = sitInModal.querySelector('.modal-content');
+            modalContent.classList.remove('show');
+        }
+        if (event.target === pointsModal) {
+            closePointsModal();
         }
     };
 
@@ -289,7 +331,6 @@
     const studentId = document.getElementById("studentId");
     const studentName = document.getElementById("studentName");
     const remainingSessions = document.getElementById("remainingSessions");
-    let currentStudentId = null;
 
     // Function to check if student is already active
     async function checkStudentActive(studentId) {
@@ -465,7 +506,10 @@
                         <td>${formattedTime}</td>
                         <td>${student.sessions_remaining}</td>
                         <td>Active</td>
-                        <td><button class="endButton" data-student-id="${student.student_id}">End</button></td>
+                        <td>
+                            <button class="action-button" onclick="openPointsModal('${student.student_id}')">Add Points</button>
+                            <button class="endButton" data-student-id="${student.student_id}">End</button>
+                        </td>
                     `;
                 });
             }
@@ -571,15 +615,25 @@
     }
 
     // Open pending reservations modal
-    pendingReservationsButton.onclick = function() {
-        pendingReservationsModal.style.display = "block";
-        loadPendingReservations();
-    };
+    if (pendingReservationsButton) {
+        pendingReservationsButton.onclick = function() {
+            pendingReservationsModal.style.display = "flex";
+            pendingReservationsModal.classList.add('show');
+            const modalContent = pendingReservationsModal.querySelector('.modal-content');
+            modalContent.classList.add('show');
+            loadPendingReservations();
+        };
+    }
 
     // Close pending reservations modal
     document.querySelectorAll('.close').forEach(closeBtn => {
         closeBtn.onclick = function() {
-            pendingReservationsModal.style.display = "none";
+            if (pendingReservationsModal) {
+                pendingReservationsModal.style.display = "none";
+                pendingReservationsModal.classList.remove('show');
+                const modalContent = pendingReservationsModal.querySelector('.modal-content');
+                modalContent.classList.remove('show');
+            }
         };
     });
 
@@ -617,6 +671,55 @@
         }
     });
     {% endif %}
+
+    // Points Modal functionality
+    function openPointsModal(studentId) {
+        currentStudentId = studentId;
+        pointsModal.style.display = "flex";
+        pointsModal.classList.add('show');
+        const modalContent = pointsModal.querySelector('.modal-content');
+        modalContent.classList.add('show');
+    }
+
+    function closePointsModal() {
+        pointsModal.style.display = "none";
+        pointsModal.classList.remove('show');
+        const modalContent = pointsModal.querySelector('.modal-content');
+        modalContent.classList.remove('show');
+        currentStudentId = null;
+    }
+
+    async function addPoints(points) {
+        if (!currentStudentId) return;
+
+        try {
+            const formData = new FormData();
+            formData.append('student_id', currentStudentId);
+            formData.append('points', points);
+
+            const response = await fetch('/add_points', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                let message = data.message;
+                if (data.additional_sessions > 0) {
+                    message += `\nCongratulations! You've earned ${data.additional_sessions} additional session${data.additional_sessions > 1 ? 's' : ''}!`;
+                }
+                alert(message);
+                closePointsModal();
+                loadActiveStudents(); // Refresh the table
+            } else {
+                alert(data.error || 'Error adding points');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error adding points');
+        }
+    }
 </script>
 
 

@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab Resources - Sit-in Monitoring System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+    <style>
+        .upload-container, .display-container {
+            margin: 2rem auto;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-left: 50px;
+            margin-right: 20px;
+            width: calc(97% - 60px);
+        }
+
+        .upload-container h2, .display-container h2 {
+            color: #ffd93d;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .file-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .file-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .file-card h3 {
+            color: #ffd93d;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .file-card img {
+            max-width: 100%;
+            height: auto;
+            margin: 1rem 0;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .file-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .file-actions button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            min-width: 100px;
+        }
+
+        .file-actions button:first-child {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .file-actions button:nth-child(2) {
+            background: #ffd93d;
+            color: #1a1a2e;
+        }
+
+        .file-actions button:last-child {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .file-actions button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Form Styling */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            color: #ffd93d;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="file"] {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input[type="text"]:focus,
+        .form-group input[type="file"]:focus {
+            outline: none;
+            border-color: #ff6b6b;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Switch Styling */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #4CAF50;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Upload Button */
+        #uploadForm button[type="submit"] {
+            background: #4CAF50;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        #uploadForm button[type="submit"]:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Modal Styling */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a1a2e;
+            margin: 2% auto;
+            padding: 2.5rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border-radius: 15px;
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            color: #fff;
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        .modal-content.show {
+            display: block;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .close {
+            position: absolute;
+            right: 1.5rem;
+            top: 1rem;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #ff6b6b;
+            transition: all 0.3s ease;
+            background: none;
+            border: none;
+            padding: 0.5rem;
+            line-height: 1;
+        }
+
+        .close:hover {
+            color: #ffd93d;
+            transform: scale(1.1);
+        }
+
+        /* Responsive Design */
+        @media screen and (max-width: 768px) {
+            .upload-container, .display-container {
+                margin: 1rem;
+                padding: 1rem;
+                width: calc(100% - 2rem);
+            }
+
+            .file-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 5% auto;
+                padding: 1.5rem;
+            }
+
+            .file-actions {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .file-actions button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="body">
+    <header>
+        <h2 class="titleh1">
+            <span class="button__icon">
+                CCS SIT-IN MONITORING SYSTEM <ion-icon name="bookmarks-outline"></ion-icon>
+            </span>
+        </h2>
+    </header>
+  
+    <section class="grid-container">
+        <nav>
+            <ul>
+              <li>
+                  <button class="button" onclick="window.location.href='/dashboard'">
+                      <span class="textini">
+                        Dashboard
+                      </span>
+                      <span aria-hidden="true" class="hover-text">
+                        Dashboard
+                      </span>
+                    </button>
+              </li>
+                {% if user.role == 'admin' %}
+                <li>
+                <button class="button" onclick="window.location.href='/search'">
+                    <span class="textini">
+                        Search 
+                    </span>
+                    <span aria-hidden="true" class="hover-text">
+                        Search
+                    </span>
+                </button>
+                </li>
+                {% endif %}
+
+
+                <li>
+                    <button class="button" onclick="window.location.href='/edit'">
+                        <span class="textini">
+                            Edit 
+                        </span>
+                        <span aria-hidden="true" class="hover-text">
+                            Edit
+                        </span>
+                    </button>
+                </li>
+                
+  
+                {% if user.role == 'admin' %}
+                <li>
+                    <button class="button" onclick="window.location.href='/announcement'">
+                        <span class="textini">
+                            Announcement 
+                        </span>
+                        <span aria-hidden="true" class="hover-text">
+                            Announcement
+                        </span>
+                    </button>
+                </li>
+                {% endif %}
+
+                {% if user.role == 'admin' %}
+                <li>
+                    <button class="button" onclick="window.location.href='/sit-in'">
+                        <span class="textini">
+                            Sit-In
+                        </span>
+                        <span aria-hidden="true" class="hover-text">
+                            Sit-In
+                        </span>
+                    </button>
+                </li>
+                {% endif %}
+
+                {% if user.role == 'admin' %}
+                <li>
+                    <button class="button" onclick="window.location.href='/sit-in-reports'">
+                        <span class="textini">
+                            Sit-In Reports
+                        </span>
+                        <span aria-hidden="true" class="hover-text">
+                            Sit-In Reports
+                        </span> 
+                    </button>
+                </li>
+                {% endif %}
+  
+                {% if user.role == 'user' %}
+                <li>
+                    <button class="button" onclick="window.location.href='/reservations'">
+                        <span class="textini">
+                            Reservations 
+                        </span>
+                        <span aria-hidden="true" class="hover-text">
+                            Reservations
+                        </span>
+                    </button>
+                </li>
+                {% endif %}
+
+                <li>
+                    <button class="button" onclick="window.location.href='/lab-resources'">
+                        <span class="textini">
+                            Lab Resources
+                        </span>
+                        <span aria-hidden="true" class="hover-text">
+                            Lab Resources
+                        </span>
+                    </button>
+                </li>
+
+                <!-- Logout Button -->
+                <li>
+                    <button class="button" style="background-color: red; color: white;" onclick="window.location.href='/logout'">
+                        <span class="textini">
+                            Logout 
+                        </span>
+                        <span aria-hidden="true" class="hover-text">
+                            Logout
+                        </span>
+                    </button>
+                </li>
+            </ul>
+        </nav>
+  
+    </nav>
+    <article>
+        {% if user.role == 'admin' %}
+        <div class="upload-container">
+            <h2>Upload File</h2>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div style="margin-bottom: 15px;">
+                    <label for="title">Title:</label>
+                    <input type="text" id="title" name="title" required style="width: 100%; padding: 8px; margin-top: 5px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label for="file">Choose File:</label>
+                    <input type="file" id="file" name="file" required style="width: 100%; margin-top: 5px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label>Enable Download:</label>
+                    <label class="switch">
+                        <input type="checkbox" id="enableDownload" name="enableDownload">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <button type="submit" style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">
+                    Upload
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
+        <div class="display-container">
+            <h2>Lab Resources</h2>
+            <div class="file-grid" id="fileGrid">
+                <!-- Files will be displayed here -->
+            </div>
+        </div>
+    </article>
+</section>
+
+<!-- Edit Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <button class="close" onclick="closeEditModal()">&times;</button>
+        <h2 style="color: #ffd93d; margin-bottom: 1.5rem;">Edit File</h2>
+        <form id="editForm" enctype="multipart/form-data">
+            <input type="hidden" id="editFileId" name="fileId">
+            <div class="form-group">
+                <label for="editTitle">Title:</label>
+                <input type="text" id="editTitle" name="title" required>
+            </div>
+            <div class="form-group">
+                <label for="editFile">New File (optional):</label>
+                <input type="file" id="editFile" name="file">
+            </div>
+            <div class="form-group">
+                <label>Enable Download:</label>
+                <label class="switch">
+                    <input type="checkbox" id="editEnableDownload" name="enableDownload">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button type="button" class="action-button" style="background: #ff6b6b;" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="action-button" style="background: #4CAF50;">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<footer>
+    <p>copyright © <span id="year"></span> all rights reserved</p>
+    <script>
+        document.getElementById("year").textContent = new Date().getFullYear();
+    </script>
+</footer>
+
+<script>
+    // Define isAdmin at the top level
+    const isAdmin = '{{ user.role }}' === 'admin';
+    console.log('User role:', '{{ user.role }}');
+    console.log('Is admin:', isAdmin);
+
+    // Only add upload form event listener if the form exists
+    const uploadForm = document.getElementById('uploadForm');
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await fetch('/upload_lab_resource', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    alert('File uploaded successfully!');
+                    loadFiles(); // Reload the files display
+                    e.target.reset();
+                } else {
+                    alert('Error uploading file');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error uploading file');
+            }
+        });
+    }
+
+    async function loadFiles() {
+        console.log('Loading lab resources...');
+        try {
+            const response = await fetch('/get_lab_resources');
+            console.log('Response status:', response.status);
+            const data = await response.json();
+            console.log('Received data:', data);
+            
+            const fileGrid = document.getElementById('fileGrid');
+            if (!fileGrid) {
+                console.error('File grid element not found');
+                return;
+            }
+            
+            fileGrid.innerHTML = '';
+            
+            if (data.files && data.files.length > 0) {
+                data.files.forEach(file => {
+                    const fileCard = document.createElement('div');
+                    fileCard.className = 'file-card';
+                    
+                    const fileExtension = file.filename.split('.').pop().toLowerCase();
+                    let fileIcon = '📄'; // Default icon
+                    let previewContent = '';
+                    
+                    // Set icon and preview based on file type
+                    if (['pdf'].includes(fileExtension)) {
+                        fileIcon = '📕';
+                    } else if (['doc', 'docx'].includes(fileExtension)) {
+                        fileIcon = '📘';
+                    } else if (['xls', 'xlsx'].includes(fileExtension)) {
+                        fileIcon = '📗';
+                    } else if (['ppt', 'pptx'].includes(fileExtension)) {
+                        fileIcon = '📙';
+                    } else if (['jpg', 'jpeg', 'png'].includes(fileExtension)) {
+                        fileIcon = '🖼️';
+                        previewContent = `<img src="${file.preview_url}" alt="${file.title}" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px;">`;
+                    }
+                    
+                    fileCard.innerHTML = `
+                        <div class="file-icon">${fileIcon}</div>
+                        <div class="file-info">
+                            <h3>${file.title}</h3>
+                            ${previewContent}
+                            <p>${file.filename}</p>
+                            <p>Uploaded: ${new Date(file.uploaded_at).toLocaleString()}</p>
+                        </div>
+                        <div class="file-actions">
+                            ${file.enabled ? 
+                                `<button onclick="downloadFile(${file.id})" class="action-button">Download</button>` :
+                                `<button disabled class="action-button" style="opacity: 0.5; cursor: not-allowed">Download Disabled</button>`
+                            }
+                            ${isAdmin ? `
+                                <button onclick="editFile(${file.id})" class="action-button">Edit</button>
+                                <button onclick="deleteFile(${file.id})" class="action-button">Delete</button>
+                            ` : ''}
+                        </div>
+                    `;
+                    
+                    fileGrid.appendChild(fileCard);
+                });
+            } else {
+                fileGrid.innerHTML = '<p class="no-files">No files uploaded yet.</p>';
+            }
+        } catch (error) {
+            console.error('Error loading lab resources:', error);
+            const fileGrid = document.getElementById('fileGrid');
+            if (fileGrid) {
+                fileGrid.innerHTML = '<p class="error">Error loading files. Please try again later.</p>';
+            }
+        }
+    }
+
+    async function downloadFile(fileId) {
+        window.location.href = `/download_lab_resource/${fileId}`;
+    }
+
+    async function editFile(fileId) {
+        console.log('Edit button clicked for file:', fileId); // Debug log
+        try {
+            const response = await fetch(`/get_lab_resource/${fileId}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                // Populate the edit form
+                document.getElementById('editFileId').value = fileId;
+                document.getElementById('editTitle').value = data.file.title;
+                document.getElementById('editEnableDownload').checked = data.file.enabled;
+                
+                // Show the modal
+                const modal = document.getElementById('editModal');
+                modal.style.display = 'flex';
+                modal.classList.add('show');
+                const modalContent = modal.querySelector('.modal-content');
+                modalContent.classList.add('show');
+                console.log('Modal should be visible now'); // Debug log
+            } else {
+                alert('Error loading file details');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error loading file details');
+        }
+    }
+
+    function closeEditModal() {
+        const modal = document.getElementById('editModal');
+        modal.style.display = 'none';
+        modal.classList.remove('show');
+        const modalContent = modal.querySelector('.modal-content');
+        modalContent.classList.remove('show');
+    }
+
+    document.getElementById('editForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        
+        try {
+            const response = await fetch('/update_lab_resource', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                alert('File updated successfully!');
+                closeEditModal();
+                loadFiles(); // Reload the files display
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Error updating file');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error updating file');
+        }
+    });
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('editModal');
+        if (event.target == modal) {
+            closeEditModal();
+        }
+    }
+
+    async function deleteFile(fileId) {
+        if (confirm('Are you sure you want to delete this file?')) {
+            try {
+                const response = await fetch(`/delete_lab_resource/${fileId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    loadFiles(); // Reload the files display
+                } else {
+                    alert('Error deleting file');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error deleting file');
+            }
+        }
+    }
+
+    // Load files when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Page loaded, initializing...');
+        loadFiles();
+    });
+</script>
+
+<script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+
+</body>
+</html>

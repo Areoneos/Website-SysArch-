@@ -1,5 +1,8 @@
-from flask import Flask, render_template, request, redirect, url_for, session, make_response
+from flask import Flask, render_template, request, redirect, url_for, session, make_response, send_file
 import sqlite3
+import os
+from werkzeug.utils import secure_filename
+import time
 
 app = Flask(__name__, template_folder='templates')
 app.secret_key = "supersecretkey"
@@ -153,112 +156,140 @@ def edit():
         return render_template('edit.html', user=user_data)
 
 
-import os
-from flask import request, redirect, url_for, session, flash
-import sqlite3
+# Configure upload folder
+UPLOAD_FOLDER = os.path.join('static', 'lab_resources')
+ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'}
 
-# Function to connect to the database
-def connect_db():
-    return sqlite3.connect("users.db")
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
-# Function to get the absolute path of the profile_pictures folder
-def get_profile_pictures_folder():
-    # Get the absolute path of the current directory
-    base_dir = os.path.abspath(os.path.dirname(__file__))
-    # Create the profile_pictures folder if it doesn't exist
-    profile_pictures_dir = os.path.join(base_dir, 'static', 'profile_pictures')
-    if not os.path.exists(profile_pictures_dir):
-        os.makedirs(profile_pictures_dir)
-    return profile_pictures_dir
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@app.route('/update_profile', methods=['POST'])
-def update_profile():
+@app.route('/lab-resources')
+def lab_resources():
     user = get_current_user()
     if not user:
         return redirect(url_for('login'))
+    return render_template('lab-resources.html', user=user)
 
-    # Get the current username from the session
-    username = session['user']
+@app.route('/upload_lab_resource', methods=['POST'])
+def upload_lab_resource():
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    if 'file' not in request.files:
+        return {'error': 'No file part'}, 400
+    
+    file = request.files['file']
+    title = request.form.get('title')
+    enabled = request.form.get('enableDownload') == 'on'
+    
+    if file.filename == '':
+        return {'error': 'No selected file'}, 400
+    
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        # Add timestamp to filename to make it unique
+        filename = f"{int(time.time())}_{filename}"
+        file_path = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(file_path)
+        
+        conn = connect_db()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO lab_resources (title, filename, file_path, enabled, uploaded_by)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (title, filename, file_path, enabled, get_current_user()['username']))
+        conn.commit()
+        conn.close()
+        
+        return {'success': True}
+    
+    return {'error': 'File type not allowed'}, 400
 
-    # Fetch form data
-    id_number = request.form['id_number']
-    last_name = request.form['last_name']
-    first_name = request.form['first_name']
-    middle_name = request.form.get('middle_name', '')
-    course = request.form['course']
-    year_level = request.form['year_level']
-    email = request.form['email']
-    new_username = request.form['username']
-    new_password = request.form['password']
-
-    # Handle profile picture upload
-    profile_picture = None
-    if 'profile_picture' in request.files:
-        file = request.files['profile_picture']
-        if file.filename != '':
-            # Generate a unique filename
-            filename = f"user_{username}_profile_picture.{file.filename.split('.')[-1]}"
-            # Get the absolute path to the profile_pictures folder
-            profile_pictures_dir = get_profile_pictures_folder()
-            file_path = os.path.join(profile_pictures_dir, filename)
-            # Save the file
-            file.save(file_path)
-            profile_picture = filename
-
-    # Connect to the database
+@app.route('/get_lab_resources')
+def get_lab_resources():
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
     conn = connect_db()
     cursor = conn.cursor()
+    
+    # Get all resources for all authenticated users
+    cursor.execute('''
+        SELECT id, title, filename, enabled, uploaded_at
+        FROM lab_resources
+        ORDER BY uploaded_at DESC
+    ''')
+    
+    resources = cursor.fetchall()
+    conn.close()
+    
+    files = []
+    for resource in resources:
+        file_path = os.path.join('static', 'lab_resources', resource[2])
+        preview_url = url_for('static', filename=f'lab_resources/{resource[2]}')
+        
+        files.append({
+            'id': resource[0],
+            'title': resource[1],
+            'filename': resource[2],
+            'enabled': bool(resource[3]),
+            'uploaded_at': resource[4],
+            'preview_url': preview_url
+        })
+    
+    return {'files': files}
 
-    try:
-        # Update user data in the database
-        if new_password:
-            # Hash the new password if provided
-            hashed_password = hash_password(new_password)
-            if profile_picture:
-                cursor.execute("""
-                    UPDATE users 
-                    SET id_number = ?, last_name = ?, first_name = ?, middle_name = ?, 
-                        course = ?, year_level = ?, email = ?, username = ?, password = ?, profile_picture = ?
-                    WHERE username = ?
-                """, (id_number, last_name, first_name, middle_name, course, year_level, email, new_username, hashed_password, profile_picture, username))
-            else:
-                cursor.execute("""
-                    UPDATE users 
-                    SET id_number = ?, last_name = ?, first_name = ?, middle_name = ?, 
-                        course = ?, year_level = ?, email = ?, username = ?, password = ?
-                    WHERE username = ?
-                """, (id_number, last_name, first_name, middle_name, course, year_level, email, new_username, hashed_password, username))
-        else:
-            if profile_picture:
-                cursor.execute("""
-                    UPDATE users 
-                    SET id_number = ?, last_name = ?, first_name = ?, middle_name = ?, 
-                        course = ?, year_level = ?, email = ?, username = ?, profile_picture = ?
-                    WHERE username = ?
-                """, (id_number, last_name, first_name, middle_name, course, year_level, email, new_username, profile_picture, username))
-            else:
-                cursor.execute("""
-                    UPDATE users 
-                    SET id_number = ?, last_name = ?, first_name = ?, middle_name = ?, 
-                        course = ?, year_level = ?, email = ?, username = ?
-                    WHERE username = ?
-                """, (id_number, last_name, first_name, middle_name, course, year_level, email, new_username, username))
+@app.route('/download_lab_resource/<int:file_id>')
+def download_lab_resource(file_id):
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute('SELECT filename, enabled FROM lab_resources WHERE id = ?', (file_id,))
+    resource = cursor.fetchone()
+    conn.close()
+    
+    if not resource:
+        return {'error': 'File not found'}, 404
+    
+    # Check if download is enabled or user is admin
+    if not resource[1] and get_current_user()['role'] != 'admin':
+        return {'error': 'Download not enabled for this file'}, 403
+    
+    file_path = os.path.join('static', 'lab_resources', resource[0])
+    return send_file(file_path, as_attachment=True)
 
-        conn.commit()
-        flash('Profile updated successfully!', 'success')
-    except sqlite3.IntegrityError:
-        conn.rollback()
-        flash('Username or email already taken.', 'error')
-    finally:
+@app.route('/delete_lab_resource/<int:file_id>', methods=['DELETE'])
+def delete_lab_resource(file_id):
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    # Get file information
+    cursor.execute('SELECT filename FROM lab_resources WHERE id = ?', (file_id,))
+    resource = cursor.fetchone()
+    
+    if not resource:
         conn.close()
-
-    # Update the session username if it was changed
-    if new_username != username:
-        session['user'] = new_username
-
-    return redirect(url_for('dashboard'))
-
-
+        return {'error': 'File not found'}, 404
+    
+    # Delete file from filesystem
+    file_path = os.path.join('static', 'lab_resources', resource[0])
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    
+    # Delete record from database
+    cursor.execute('DELETE FROM lab_resources WHERE id = ?', (file_id,))
+    conn.commit()
+    conn.close()
+    
+    return {'success': True}
 
 @app.route('/announcement')
 def announcement():
@@ -342,6 +373,15 @@ def init_db():
     conn = connect_db()
     cursor = conn.cursor()
     
+    # Check if points column exists in users table
+    cursor.execute("PRAGMA table_info(users)")
+    columns = [column[1] for column in cursor.fetchall()]
+    
+    if 'points' not in columns:
+        cursor.execute('''
+            ALTER TABLE users ADD COLUMN points INTEGER DEFAULT 0
+        ''')
+    
     # Create sit-in records table if it doesn't exist
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS sit_in_records (
@@ -371,6 +411,20 @@ def init_db():
             status TEXT NOT NULL DEFAULT 'Pending',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (student_id) REFERENCES users (id_number)
+        )
+    ''')
+    
+    # Create lab resources table if it doesn't exist
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS lab_resources (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            filename TEXT NOT NULL,
+            file_path TEXT NOT NULL,
+            enabled BOOLEAN DEFAULT 1,
+            uploaded_by TEXT NOT NULL,
+            uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (uploaded_by) REFERENCES users (username)
         )
     ''')
     
@@ -985,6 +1039,175 @@ def submit_feedback():
         return {'error': f'Database error: {str(e)}'}, 500
     finally:
         conn.close()
+
+@app.route('/get_lab_resource/<int:file_id>')
+def get_lab_resource(file_id):
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT id, title, filename, enabled
+        FROM lab_resources
+        WHERE id = ?
+    ''', (file_id,))
+    resource = cursor.fetchone()
+    conn.close()
+    
+    if not resource:
+        return {'error': 'File not found'}, 404
+    
+    return {
+        'success': True,
+        'file': {
+            'id': resource[0],
+            'title': resource[1],
+            'filename': resource[2],
+            'enabled': bool(resource[3])
+        }
+    }
+
+@app.route('/update_lab_resource', methods=['POST'])
+def update_lab_resource():
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    file_id = request.form.get('fileId')
+    title = request.form.get('title')
+    enabled = request.form.get('enableDownload') == 'on'
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    # Check if file exists
+    cursor.execute('SELECT filename FROM lab_resources WHERE id = ?', (file_id,))
+    resource = cursor.fetchone()
+    
+    if not resource:
+        conn.close()
+        return {'error': 'File not found'}, 404
+    
+    # Handle file upload if a new file is provided
+    if 'file' in request.files and request.files['file'].filename != '':
+        file = request.files['file']
+        if file and allowed_file(file.filename):
+            # Delete old file
+            old_file_path = os.path.join('static', 'lab_resources', resource[0])
+            if os.path.exists(old_file_path):
+                os.remove(old_file_path)
+            
+            # Save new file
+            filename = secure_filename(file.filename)
+            filename = f"{int(time.time())}_{filename}"
+            file_path = os.path.join(UPLOAD_FOLDER, filename)
+            file.save(file_path)
+            
+            # Update database with new filename
+            cursor.execute('''
+                UPDATE lab_resources
+                SET title = ?, filename = ?, file_path = ?, enabled = ?
+                WHERE id = ?
+            ''', (title, filename, file_path, enabled, file_id))
+        else:
+            conn.close()
+            return {'error': 'Invalid file type'}, 400
+    else:
+        # Update only title and enabled status
+        cursor.execute('''
+            UPDATE lab_resources
+            SET title = ?, enabled = ?
+            WHERE id = ?
+        ''', (title, enabled, file_id))
+    
+    conn.commit()
+    conn.close()
+    
+    return {'success': True}
+
+@app.route('/add_points', methods=['POST'])
+def add_points():
+    if not get_current_user() or get_current_user()['role'] != 'admin':
+        return {'error': 'Not authorized'}, 403
+    
+    student_id = request.form.get('student_id')
+    points = int(request.form.get('points', 0))
+    
+    if points not in [1, 2, 3]:
+        return {'error': 'Invalid points value'}, 400
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    try:
+        # Get current points
+        cursor.execute('SELECT points FROM users WHERE id_number = ?', (student_id,))
+        current_points = cursor.fetchone()[0]
+        
+        # Calculate new total points
+        new_points = current_points + points
+        
+        # Calculate additional sessions (1 session per 3 points)
+        additional_sessions = (new_points // 3) - (current_points // 3)
+        
+        # Update points and sessions
+        cursor.execute('''
+            UPDATE users 
+            SET points = points + ?,
+                sessions_remaining = sessions_remaining + ?
+            WHERE id_number = ?
+        ''', (points, additional_sessions, student_id))
+        
+        conn.commit()
+        
+        # Get updated user data
+        cursor.execute('SELECT points, sessions_remaining FROM users WHERE id_number = ?', (student_id,))
+        updated_data = cursor.fetchone()
+        
+        return {
+            'success': True,
+            'message': f'Successfully added {points} point(s)!',
+            'additional_sessions': additional_sessions,
+            'total_points': updated_data[0],
+            'sessions_remaining': updated_data[1]
+        }
+    except sqlite3.Error as e:
+        conn.rollback()
+        return {'error': f'Database error: {str(e)}'}, 500
+    finally:
+        conn.close()
+
+@app.route('/get_leaderboard')
+def get_leaderboard():
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT id_number, first_name, last_name, points, sessions_remaining
+        FROM users 
+        WHERE role = 'user'
+        ORDER BY points DESC
+        LIMIT 5
+    ''')
+    
+    leaderboard = cursor.fetchall()
+    conn.close()
+    
+    return {
+        'success': True,
+        'leaderboard': [
+            {
+                'id_number': user[0],
+                'name': f"{user[1]} {user[2]}",
+                'points': user[3],
+                'sessions_remaining': user[4]
+            }
+            for user in leaderboard
+        ]
+    }
 
 if __name__ == '__main__':
     app.run(debug=True)

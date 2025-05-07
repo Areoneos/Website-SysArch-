@@ -503,8 +503,8 @@ a:hover {
     margin-left: 80px;
 }
 
-.searchform {
-    width: 100%;
+.search-form {
+    width: 96%;
     padding: 12px;
     margin: 20px 0;
     display: inline-block;

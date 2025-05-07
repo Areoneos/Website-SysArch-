@@ -105,7 +105,16 @@
                 </li>
                 {% endif %}
 
-                
+                <li>
+                    <button class="button" onclick="window.location.href='/lab-resources'">
+                        <span class="textini">
+                            Lab Resources
+                        </span>
+                        <span aria-hidden="true" class="hover-text">
+                            Lab Resources
+                        </span>
+                    </button>
+                </li>
 
                 <!-- Logout Button -->
                 <li>
@@ -147,8 +156,24 @@
 
     </div>
     
-        
-      
+    <!-- Leaderboard Section -->
+    <div class="leaderboard-container">
+      <h2>Top 5 Users</h2>
+      <div class="leaderboard">
+        <table id="leaderboardTable">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Name</th>
+              <th>Points</th>
+              <th>Sessions Remaining</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </article>
 </section>
 <footer>
@@ -236,6 +261,56 @@
   #searchResultsTable tr:hover {
     background: rgba(255, 255, 255, 0.1);
   }
+
+  .leaderboard-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .leaderboard-container h2 {
+    color: #ffd93d;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+
+  #leaderboardTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+  }
+
+  #leaderboardTable th,
+  #leaderboardTable td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  #leaderboardTable th {
+    background: rgba(255, 107, 107, 0.2);
+    color: #ffd93d;
+    font-weight: 600;
+  }
+
+  #leaderboardTable tr:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  #leaderboardTable tr:nth-child(1) {
+    background: rgba(255, 215, 0, 0.1);
+  }
+
+  #leaderboardTable tr:nth-child(2) {
+    background: rgba(192, 192, 192, 0.1);
+  }
+
+  #leaderboardTable tr:nth-child(3) {
+    background: rgba(205, 127, 50, 0.1);
+  }
 </style>
 
 <script>
@@ -289,8 +364,37 @@ function filterTable() {
   }
 }
 
-// Load all users when the page loads
-document.addEventListener('DOMContentLoaded', loadAllUsers);
+// Function to load leaderboard
+async function loadLeaderboard() {
+  try {
+    const response = await fetch('/get_leaderboard');
+    const data = await response.json();
+    
+    if (data.success) {
+      const tableBody = document.getElementById('leaderboardTable').getElementsByTagName('tbody')[0];
+      tableBody.innerHTML = '';
+      
+      data.leaderboard.forEach((user, index) => {
+        const row = tableBody.insertRow();
+        row.innerHTML = `
+          <td>#${index + 1}</td>
+          <td>${user.name}</td>
+          <td>${user.points}</td>
+          <td>${user.sessions_remaining}</td>
+        `;
+      });
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('An error occurred while loading the leaderboard');
+  }
+}
+
+// Load all users and leaderboard when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+  loadAllUsers();
+  loadLeaderboard();
+});
 </script>
 </body>
 </html>
