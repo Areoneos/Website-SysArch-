@@ -17,10 +17,10 @@
         {% if registration_success %}
             <p class="success">Registration successful! You can now log in.</p>
         {% endif %}
-        <form action="/login" method="POST" class="loginbutton">
-            <input type="text" name="username" placeholder="Username" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Login</button>
+        <form action="/login" method="POST" >
+            <input class="logininput" type="text" name="username" placeholder="Username" required>
+            <input class="logininput" type="password" name="password" placeholder="Password" required>
+            <button class=loginbutton type="submit">Login</button>
         </form>
         <p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
     </div>

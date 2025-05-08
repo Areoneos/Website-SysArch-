@@ -19,8 +19,39 @@
 }
 
 .loginbutton {
-    width: 100%;
-    border-radius: 30px;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 120px;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+    margin-left: 20px;
+}
+
+.divider{
+    width:5px;  
+    height:auto;
+    display:inline-block;
+}
+
+.logininput {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 120px;
+    text-align: left;
+    align-items: center;
+    justify-content: center;
+    margin-left: -8px;
 }
 
 /* Header */
@@ -138,7 +169,8 @@ footer {
 
 .hover-text {
     position: absolute;
-    line-height: 38px;
+    line-height: 38 px;
+    margin-top: 6px;
     box-sizing: border-box;
     content: attr(data-text);
     color: var(--animation-color);
@@ -503,11 +535,28 @@ a:hover {
     margin-left: 80px;
 }
 
+
+
 .search-form {
     width: 96%;
     padding: 12px;
     margin: 20px 0;
     display: inline-block;
+}
+
+#searchButton, #cancelButton, #grantSitInButton {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 120px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Success and Error Messages */
@@ -636,12 +685,12 @@ a:hover {
 .form-group input,
 .form-group select,
 .form-group textarea {
-    width: 100%;
+    width: 80%;
     padding: 0.8rem 1rem;
     border: 2px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    color: #fff;
+    background: rgba(233, 230, 230, 0.856);
+    color: #1b1b1b;
     font-size: 1rem;
     transition: all 0.3s ease;
 }
@@ -656,7 +705,8 @@ a:hover {
 .form-group textarea:focus {
     outline: none;
     border-color: #ff6b6b;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgb(255, 255, 255);
+    
 }
 
 /* Action Buttons (non-navbar buttons) */
@@ -739,7 +789,8 @@ a:hover {
 #submitFeedbackButton:hover,
 #cancelFeedbackButton:hover,
 .feedback-button:hover,
-.view-feedback-button:hover {
+.view-feedback-button:hover,
+.loginbutton:hover, .logininput:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }

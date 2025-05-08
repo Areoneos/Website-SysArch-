@@ -132,6 +132,21 @@
   
     </nav>
   <article>
+    <div class="notifications-container">
+        <div class="notification-bell" onclick="toggleNotifications()">
+            <ion-icon name="notifications-outline"></ion-icon>
+            <span class="notification-badge" id="notificationBadge">0</span>
+        </div>
+        <div class="notification-dropdown" id="notificationDropdown">
+            <div class="notification-header">
+                <h3>Notifications</h3>
+                <button onclick="markAllRead()">Mark all as read</button>
+            </div>
+            <div class="notification-list" id="notificationList">
+                <!-- Notifications will be populated here -->
+            </div>
+        </div>
+    </div>
     <div class="reservations-container">
       <!-- Reserve Button -->
       <button class="button" id="reserveButton">
@@ -154,9 +169,19 @@
           <div class="form-group">
             <label for="purpose">Purpose:</label>
             <select id="purpose">
-              <option value="C Programming">C Programming</option>
-              <option value="Java">Java</option>
-              <option value="Python">Python</option>
+                <option value="C Programming">C Programming</option>
+                <option value="Java">Java</option>
+                <option value="Python">Python</option>
+                <option value="C#">C#</option>
+                <option value="Database">Database</option>
+                <option value="Digital Logic & Design">Digital Logic & Design</option>
+                <option value="Embedded Systems & IoT">Embedded Systems & IoT</option>
+                <option value="Systems Integration & Architecture">Systems Integration & Architecture</option>
+                <option value="Computer Application">Computer Application</option>
+                <option value="Project Management">Project Management</option>
+                <option value="IT Trends">IT Trends</option>
+                <option value="Technopreneurship">Technopreneurship</option>
+                <option value="Capstone">Capstone</option>
             </select>
           </div>
 
@@ -164,8 +189,14 @@
           <div class="form-group">
             <label for="laboratory">Laboratory Room:</label>
             <select id="laboratory">
-              <option value="524">524</option>
-              <option value="526">526</option>
+                <option value="524">524</option>
+                <option value="526">526</option>
+                <option value="528">528</option>
+                <option value="530">530</option>
+                <option value="542">542</option>
+                <option value="544">544</option>
+                <option value="517">517</option>
+                <option value="MAC">MAC</option>
             </select>
           </div>
 
@@ -455,7 +486,349 @@
     };
 </script>
 
+<style>
+.notifications-container {
+            margin: 2rem auto;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-left: 1130px;         
+            width: 20%;
+            text-align: center;
+}
+
+.notification-bell {
+    position: relative;
+    cursor: pointer;
+    font-size: 24px;
+    color: #ffd93d;
+    
+}
+
+.notification-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: #ff6b6b;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 12px;
+    display: none;
+    margin-left: 45px;
+}
+
+.notification-dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 24%;
+    background: #1a1a2e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    width: 300px;
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.notification-header {
+    padding: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notification-header h3 {
+    margin: 0;
+    color: #ffd93d;
+}
+
+.notification-header button {
+    background: none;
+    border: none;
+    color: #ff6b6b;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.notification-list {
+    padding: 8px;
+}
+
+.notification-item {
+    padding: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.notification-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.notification-item.unread {
+    background-color: rgba(255, 107, 107, 0.1);
+}
+
+.notification-item .message {
+    color: #fff;
+    margin-bottom: 4px;
+}
+
+.notification-item .time {
+    color: #888;
+    font-size: 12px;
+}
+
+.delete-notification {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    background: none;
+    border: none;
+    color: #ff6b6b;
+    cursor: pointer;
+    padding: 4px;
+    font-size: 18px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.delete-notification:hover {
+    opacity: 1;
+}
+
+.notification-item {
+    position: relative;
+    padding-right: 32px; /* Make room for delete button */
+}
+</style>
+
+<script>
+// Add this to your existing JavaScript
+let notificationDropdown = document.getElementById('notificationDropdown');
+let notificationBadge = document.getElementById('notificationBadge');
+let notificationList = document.getElementById('notificationList');
+
+function toggleNotifications() {
+    if (notificationDropdown.style.display === 'block') {
+        notificationDropdown.style.display = 'none';
+    } else {
+        notificationDropdown.style.display = 'block';
+        loadNotifications();
+    }
+}
+
+async function loadNotifications() {
+    try {
+        const response = await fetch('/get_notifications');
+        const data = await response.json();
+        
+        if (data.success) {
+            notificationList.innerHTML = '';
+            let unreadCount = 0;
+            
+            data.notifications.forEach(notification => {
+                if (!notification.is_read) unreadCount++;
+                
+                // Format the date and time
+                const date = new Date(notification.created_at);
+                const formattedDate = date.toLocaleDateString('en-US', {
+                    month: '2-digit',
+                    day: '2-digit',
+                    year: 'numeric'
+                });
+                
+                const hours = date.getHours();
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                const hour12 = hours % 12 || 12;
+                const formattedTime = `${String(hour12).padStart(2, '0')}:${minutes} ${ampm}`;
+                
+                const notificationItem = document.createElement('div');
+                notificationItem.className = `notification-item ${notification.is_read ? '' : 'unread'}`;
+                notificationItem.dataset.id = notification.id;
+                notificationItem.innerHTML = `
+                    <div class="message">${notification.message}</div>
+                    <div class="time">${formattedDate} ${formattedTime}</div>
+                    <button class="delete-notification" onclick="deleteNotification(${notification.id})">
+                        <ion-icon name="close-circle-outline"></ion-icon>
+                    </button>
+                `;
+                
+                if (!notification.is_read) {
+                    notificationItem.onclick = (e) => {
+                        // Don't mark as read if clicking the delete button
+                        if (!e.target.closest('.delete-notification')) {
+                            markAsRead(notification.id);
+                        }
+                    };
+                }
+                
+                notificationList.appendChild(notificationItem);
+            });
+            
+            updateBadge(unreadCount);
+        }
+    } catch (error) {
+        console.error('Error loading notifications:', error);
+        alert("Error loading notifications. Please try again.");
+    }
+}
+
+async function markAsRead(notificationId) {
+    try {
+        const formData = new FormData();
+        formData.append('notification_id', notificationId);
+        
+        const response = await fetch('/mark_notification_read', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Remove the notification from the list
+            const notificationItem = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+            if (notificationItem) {
+                notificationItem.remove();
+            }
+            // Update badge count
+            const unreadCount = document.querySelectorAll('.notification-item.unread').length;
+            updateBadge(unreadCount);
+        }
+    } catch (error) {
+        console.error('Error marking notification as read:', error);
+    }
+}
+
+async function markAllRead() {
+    try {
+        const unreadNotifications = document.querySelectorAll('.notification-item.unread');
+        
+        for (const notification of unreadNotifications) {
+            const notificationId = notification.dataset.id;
+            await markAsRead(notificationId);
+        }
+        
+        // Clear notifications after marking all as read
+        notificationList.innerHTML = '';
+        updateBadge(0);
+        
+        // Hide dropdown
+        notificationDropdown.style.display = 'none';
+    } catch (error) {
+        console.error('Error marking all notifications as read:', error);
+        alert('Error marking notifications as read. Please try again.');
+    }
+}
+
+function updateBadge(count) {
+    if (count > 0) {
+        notificationBadge.style.display = 'block';
+        notificationBadge.textContent = count;
+    } else {
+        notificationBadge.style.display = 'none';
+    }
+}
+
+// Load notifications periodically
+setInterval(loadNotifications, 30000); // Check every 30 seconds
+
+// Initial load
+document.addEventListener('DOMContentLoaded', loadNotifications);
+</script>
+
 <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+
+<!-- Handle reservation status updates -->
+<script>
+    document.addEventListener("click", async function(event) {
+        if (event.target.classList.contains("approveButton") || event.target.classList.contains("rejectButton")) {
+            const reservationId = event.target.dataset.reservationId;
+            const status = event.target.classList.contains("approveButton") ? "Approved" : "Rejected";
+            
+            try {
+                // Show confirmation dialog for rejection
+                if (status === "Rejected") {
+                    const confirmReject = confirm("Are you sure you want to reject this reservation request?");
+                    if (!confirmReject) {
+                        return;
+                    }
+                }
+
+                const response = await fetch('/update_reservation_status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `reservation_id=${encodeURIComponent(reservationId)}&status=${encodeURIComponent(status)}`
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Show success message
+                    const message = status === "Approved" ? 
+                        "Reservation request has been approved!" : 
+                        "Reservation request has been rejected.";
+                    alert(message);
+
+                    // Refresh pending reservations
+                    loadPendingReservations();
+                    // Reload notifications to clear the processed request
+                    loadNotifications();
+                } else {
+                    throw new Error(data.error || "Error updating reservation status");
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Error: ${error.message || "Failed to update reservation status"}`);
+            }
+        }
+    });
+
+    // Add delete notification functionality
+    async function deleteNotification(notificationId) {
+        try {
+            const confirmDelete = confirm("Are you sure you want to delete this notification?");
+            if (!confirmDelete) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('notification_id', notificationId);
+            
+            const response = await fetch('/delete_notification', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Remove the notification from the list
+                const notificationItem = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+                if (notificationItem) {
+                    notificationItem.remove();
+                }
+                // Update badge count
+                const unreadCount = document.querySelectorAll('.notification-item.unread').length;
+                updateBadge(unreadCount);
+            } else {
+                throw new Error(data.error || "Error deleting notification");
+            }
+        } catch (error) {
+            console.error('Error deleting notification:', error);
+            alert(`Error: ${error.message || "Failed to delete notification"}`);
+        }
+    }
+</script>
 </body>
 </html>

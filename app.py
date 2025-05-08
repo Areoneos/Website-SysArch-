@@ -382,6 +382,19 @@ def init_db():
             ALTER TABLE users ADD COLUMN points INTEGER DEFAULT 0
         ''')
     
+    # Create notifications table if it doesn't exist
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            message TEXT NOT NULL,
+            type TEXT NOT NULL,
+            is_read BOOLEAN DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id_number)
+        )
+    ''')
+    
     # Create sit-in records table if it doesn't exist
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS sit_in_records (
@@ -551,6 +564,12 @@ def start_sit_in():
             WHERE id_number = ?
         ''', (student_id,))
         
+        # Create notification for the student
+        cursor.execute('''
+            INSERT INTO notifications (user_id, message, type)
+            VALUES (?, ?, ?)
+        ''', (student_id, f'You have been granted a sit-in session for {purpose} in Lab {laboratory}', 'sit_in_granted'))
+        
         conn.commit()
         conn.close()
         return {'success': True}
@@ -648,16 +667,31 @@ def create_reservation():
     
     student_name = f"{student[0]} {student[1]}"
     
-    # Create reservation record
-    cursor.execute('''
-        INSERT INTO reservations (student_id, student_name, purpose, laboratory, reservation_date, reservation_time, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (student_id, student_name, purpose, laboratory, reservation_date, reservation_time, 'Pending'))
-    
-    conn.commit()
-    conn.close()
-    
-    return {'success': True}
+    try:
+        # Create reservation record
+        cursor.execute('''
+            INSERT INTO reservations (student_id, student_name, purpose, laboratory, reservation_date, reservation_time, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (student_id, student_name, purpose, laboratory, reservation_date, reservation_time, 'Pending'))
+        
+        # Create notifications for all admin users
+        cursor.execute('SELECT id_number FROM users WHERE role = "admin"')
+        admin_ids = cursor.fetchall()
+        
+        for admin_id in admin_ids:
+            cursor.execute('''
+                INSERT INTO notifications (user_id, message, type)
+                VALUES (?, ?, ?)
+            ''', (admin_id[0], f'New reservation request from {student_name} for {purpose} in Lab {laboratory}', 'new_reservation'))
+        
+        conn.commit()
+        conn.close()
+        
+        return {'success': True}
+    except sqlite3.Error as e:
+        conn.rollback()
+        conn.close()
+        return {'error': f'Database error: {str(e)}'}, 500
 
 @app.route('/get_user_reservations', methods=['GET'])
 def get_user_reservations():
@@ -763,6 +797,27 @@ def update_reservation_status():
                 SET sessions_remaining = sessions_remaining - 1
                 WHERE id_number = ?
             ''', (reservation[0],))
+            
+            # Create notification for the student
+            cursor.execute('''
+                INSERT INTO notifications (user_id, message, type)
+                VALUES (?, ?, ?)
+            ''', (reservation[0], f'Your reservation for {reservation[2]} in Lab {reservation[3]} has been approved!', 'reservation_approved'))
+    else:  # Rejected
+        # Get reservation details for rejection notification
+        cursor.execute('''
+            SELECT student_id, student_name, purpose, laboratory, reservation_date, reservation_time
+            FROM reservations
+            WHERE id = ?
+        ''', (reservation_id,))
+        reservation = cursor.fetchone()
+        
+        if reservation:
+            # Create notification for the student about rejection
+            cursor.execute('''
+                INSERT INTO notifications (user_id, message, type)
+                VALUES (?, ?, ?)
+            ''', (reservation[0], f'Your reservation for {reservation[2]} in Lab {reservation[3]} on {reservation[4]} at {reservation[5]} has been rejected.', 'reservation_rejected'))
     
     # Update reservation status
     cursor.execute('''
@@ -1208,6 +1263,126 @@ def get_leaderboard():
             for user in leaderboard
         ]
     }
+
+@app.route('/create_notification', methods=['POST'])
+def create_notification():
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    user_id = request.form.get('user_id')
+    message = request.form.get('message')
+    notification_type = request.form.get('type')
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute('''
+            INSERT INTO notifications (user_id, message, type)
+            VALUES (?, ?, ?)
+        ''', (user_id, message, notification_type))
+        
+        conn.commit()
+        return {'success': True}
+    except sqlite3.Error as e:
+        conn.rollback()
+        return {'error': f'Database error: {str(e)}'}, 500
+    finally:
+        conn.close()
+
+@app.route('/get_notifications', methods=['GET'])
+def get_notifications():
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    user_id = get_current_user()['id_number']
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT id, message, type, is_read, created_at
+        FROM notifications
+        WHERE user_id = ?
+        ORDER BY created_at DESC
+        LIMIT 10
+    ''', (user_id,))
+    
+    notifications = cursor.fetchall()
+    conn.close()
+    
+    return {
+        'success': True,
+        'notifications': [
+            {
+                'id': n[0],
+                'message': n[1],
+                'type': n[2],
+                'is_read': bool(n[3]),
+                'created_at': n[4]
+            }
+            for n in notifications
+        ]
+    }
+
+@app.route('/mark_notification_read', methods=['POST'])
+def mark_notification_read():
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    notification_id = request.form.get('notification_id')
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute('''
+            UPDATE notifications
+            SET is_read = 1
+            WHERE id = ? AND user_id = ?
+        ''', (notification_id, get_current_user()['id_number']))
+        
+        conn.commit()
+        return {'success': True}
+    except sqlite3.Error as e:
+        conn.rollback()
+        return {'error': f'Database error: {str(e)}'}, 500
+    finally:
+        conn.close()
+
+@app.route('/delete_notification', methods=['POST'])
+def delete_notification():
+    if not get_current_user():
+        return {'error': 'Not authenticated'}, 401
+    
+    notification_id = request.form.get('notification_id')
+    
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    try:
+        # Verify the notification belongs to the current user
+        cursor.execute('''
+            SELECT id FROM notifications 
+            WHERE id = ? AND user_id = ?
+        ''', (notification_id, get_current_user()['id_number']))
+        
+        if not cursor.fetchone():
+            return {'error': 'Notification not found or unauthorized'}, 404
+        
+        # Delete the notification
+        cursor.execute('''
+            DELETE FROM notifications
+            WHERE id = ? AND user_id = ?
+        ''', (notification_id, get_current_user()['id_number']))
+        
+        conn.commit()
+        return {'success': True}
+    except sqlite3.Error as e:
+        conn.rollback()
+        return {'error': f'Database error: {str(e)}'}, 500
+    finally:
+        conn.close()
 
 if __name__ == '__main__':
     app.run(debug=True)
