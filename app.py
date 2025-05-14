@@ -1301,7 +1301,9 @@ def get_notifications():
     cursor = conn.cursor()
     
     cursor.execute('''
-        SELECT id, message, type, is_read, created_at
+        SELECT id, message, type, is_read,
+               strftime('%Y-%m-%d', datetime(created_at, 'localtime')) as date,
+               strftime('%H:%M', datetime(created_at, 'localtime')) as time
         FROM notifications
         WHERE user_id = ?
         ORDER BY created_at DESC
@@ -1319,7 +1321,8 @@ def get_notifications():
                 'message': n[1],
                 'type': n[2],
                 'is_read': bool(n[3]),
-                'created_at': n[4]
+                'date': n[4],
+                'time': n[5]
             }
             for n in notifications
         ]

@@ -898,7 +898,7 @@
                     notificationItem.dataset.id = notification.id;
                     notificationItem.innerHTML = `
                         <div class="message">${notification.message}</div>
-                        <div class="time">${new Date(notification.created_at).toLocaleString()}</div>
+                        <div class="time">${notification.date} ${notification.time}</div>
                         <button class="delete-notification" onclick="deleteNotification(${notification.id})">
                             <ion-icon name="close-circle-outline"></ion-icon>
                         </button>

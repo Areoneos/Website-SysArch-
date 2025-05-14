@@ -635,26 +635,12 @@ async function loadNotifications() {
             data.notifications.forEach(notification => {
                 if (!notification.is_read) unreadCount++;
                 
-                // Format the date and time
-                const date = new Date(notification.created_at);
-                const formattedDate = date.toLocaleDateString('en-US', {
-                    month: '2-digit',
-                    day: '2-digit',
-                    year: 'numeric'
-                });
-                
-                const hours = date.getHours();
-                const minutes = String(date.getMinutes()).padStart(2, '0');
-                const ampm = hours >= 12 ? 'PM' : 'AM';
-                const hour12 = hours % 12 || 12;
-                const formattedTime = `${String(hour12).padStart(2, '0')}:${minutes} ${ampm}`;
-                
                 const notificationItem = document.createElement('div');
                 notificationItem.className = `notification-item ${notification.is_read ? '' : 'unread'}`;
                 notificationItem.dataset.id = notification.id;
                 notificationItem.innerHTML = `
                     <div class="message">${notification.message}</div>
-                    <div class="time">${formattedDate} ${formattedTime}</div>
+                    <div class="time">${notification.date} ${notification.time}</div>
                     <button class="delete-notification" onclick="deleteNotification(${notification.id})">
                         <ion-icon name="close-circle-outline"></ion-icon>
                     </button>
